@@ -12,7 +12,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"log"
-	"mrclean/message"
 	"net"
 	"net/http"
 	"os"
@@ -26,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/folago/mrclean"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -283,7 +283,7 @@ func ListenWatcher(out chan interface{}) {
 					continue
 				}
 				message := fmt.Sprintf("\"%s %s\"", session, time.Now().Format(time.RFC3339))
-				cmd = exec.Command("git", "commit", "-m", "-a", message)
+				cmd = exec.Command("git", "commit", "-am", message)
 				cmd.Dir = scripts
 				err = cmd.Run()
 				if err != nil { //no error means a git repo is ther already
@@ -404,7 +404,7 @@ func ScriptWatchListen() {
 					continue
 				}
 				message := fmt.Sprintf("\"%s %s\"", session, time.Now().Format(time.RFC3339))
-				cmd = exec.Command("git", "commit", "-m", message)
+				cmd = exec.Command("git", "commit", "-am", message)
 				cmd.Dir = scripts
 				err = cmd.Run()
 				if err != nil { //no error means a git repo is ther already
@@ -423,7 +423,7 @@ func ScriptWatchListen() {
 
 //Get the image data form the event path and creta a new ImageData value.
 //We strip the 'watch' var riable vaue from the path.
-func NewImageData(path string) (*message.ImageData, error) {
+func NewImageData(path string) (*mrclean.ImageData, error) {
 	relpath, err := filepath.Rel(watch, path)
 	if err != nil {
 		log.Fatal("Path to 'watch' mismatched: ", err)
@@ -444,9 +444,9 @@ func NewImageData(path string) (*message.ImageData, error) {
 	size := [2]int{cfg.Width, cfg.Height}
 	url := fmt.Sprintf("http://%s:%s/%s", host, port, relpath)
 
-	ret := &message.ImageData{
+	ret := &mrclean.ImageData{
 		URL: url,
-		MetaData: message.MetaData{
+		MetaData: mrclean.MetaData{
 			Task:      meta[0],
 			Approach:  meta[1],
 			Iteration: meta[2],
@@ -477,7 +477,7 @@ func NetSender() (chan interface{}, error) {
 	//	log.Fatal(err)
 	//}
 
-	bcastconn, err := net.DialUDP("udp", nil, message.LB)
+	bcastconn, err := net.DialUDP("udp", nil, mrclean.LB)
 	//conn, err := net.Dial("udp", message.Mcast.String())
 	//bcastconn, err := message.JoinMcast(message.Mcast.IP)
 	if err != nil {
@@ -505,8 +505,8 @@ func NetSender() (chan interface{}, error) {
 	go func() {
 		for i := range ch {
 			//sending a message containig an image
-			msg := message.OutMessage{
-				Header:  message.ImageMsg,
+			msg := mrclean.OutMessage{
+				Header:  mrclean.ImageMsg,
 				Content: i,
 			}
 			buff, err := json.Marshal(msg)

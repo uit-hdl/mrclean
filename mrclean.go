@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"code.google.com/p/go.net/ipv4"
+	geom "github.com/folago/googlmath"
 )
 
 //messgae type
@@ -178,4 +179,25 @@ func McastInterfaces() ([]net.Interface, error) {
 		return nil, fmt.Errorf("Cannot find a multicast interface")
 	}
 	return ret, nil
+}
+
+// Visual represents a visual object to be displaied.
+type Visual struct {
+	//The id of the visual
+	ID int
+	// The name of the visual
+	Name string
+	//The rectangle holding position and size for the visual
+	geom.Rectangle
+	//The url specifiyng where to find the hvisual
+	URL string
+	//Metadata associated with the visual
+	Meta []string
+}
+
+// A Gestue is a gesture perfirmed by a user.
+type Gesture struct {
+	ID    int
+	Name  string
+	Param []string
 }
