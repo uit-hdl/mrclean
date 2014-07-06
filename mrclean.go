@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"gui/we"
+	"image"
 	"log"
 	"net"
 	"strings"
 
 	"code.google.com/p/go.net/ipv4"
-	geom "github.com/folago/googlmath"
 )
 
 //messgae type
@@ -175,7 +175,6 @@ func McastInterfaces() ([]net.Interface, error) {
 		}
 	}
 	if len(ret) == 0 {
-
 		return nil, fmt.Errorf("Cannot find a multicast interface")
 	}
 	return ret, nil
@@ -188,7 +187,7 @@ type Visual struct {
 	// The name of the visual
 	Name string
 	//The rectangle holding position and size for the visual
-	geom.Rectangle
+	Rectangle image.Rectangle
 	//The url specifiyng where to find the hvisual
 	URL string
 	//Metadata associated with the visual

@@ -48,8 +48,8 @@ type Core struct {
 func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
 	c.Visuals[vis.Name] = vis
 	*reply = 0
-	log.Println("Added visual ", vis)
-	log.Println(c.Visuals)
+	log.Printf("Added visual %+v\n", vis)
+	log.Println("len(Viausls) ", len(c.Visuals))
 	return nil
 }
 
@@ -72,6 +72,6 @@ func serveJSON(core *Core) {
 			log.Fatal(err)
 		}
 
-		go rpc.DefaultServer.ServeRequest(jsonrpc.NewServerCodec(conn))
+		go rpc.DefaultServer.ServeCodec(jsonrpc.NewServerCodec(conn))
 	}
 }
