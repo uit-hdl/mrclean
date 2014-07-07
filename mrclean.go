@@ -108,7 +108,7 @@ func (i Images) Swap(p, q int) { i[p], i[q] = i[q], i[p] }
 //sort by name
 type ByName struct{ Images }
 
-func (n ByName) LEss(i, j int) bool { return n.Images[i].Name < n.Images[j].Name }
+func (n ByName) Less(i, j int) bool { return n.Images[i].Name < n.Images[j].Name }
 
 //sort by Iteration
 type ByIteration struct{ Images }
