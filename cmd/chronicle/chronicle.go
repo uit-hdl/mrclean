@@ -43,6 +43,8 @@ var (
 	scripts string = "scripts"
 	//ip:port of the image URL
 	ip, port string = "127.0.0.1", "8089"
+	//Core component RPC server address
+	corerpc string
 
 	client  *rpc.Client
 	watcher *fsnotify.Watcher
@@ -53,15 +55,20 @@ var (
 func init() {
 	flag.StringVar(&session,
 		"session", "mrclean", "Name of the session.")
+	flag.StringVar(&corerpc,
+		"corerpc", mrclean.ChronicleAddr,
+		"IP:PORT of the Core RPC server")
 	flag.StringVar(&rpcserver,
-		"rpcserver", ":32124", "IP:PORT of the rpc server, defaults to localhost:32124")
-	flag.StringVar(&watch, "watch", "./watch", "Specifies the path to watch, default to ./watch")
+		"rpcserver", mrclean.ChronicleAddr,
+		"IP:PORT of the rpc server, defaults to localhost:32124")
+	flag.StringVar(&watch, "watch", "./watch",
+		"Specifies the path to watch, default to ./watch")
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
 func main() {
 	flag.Parse()
-	client, err = jsonrpc.Dial("tcp", ":32123")
+	client, err = jsonrpc.Dial("tcp", corerpc)
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}

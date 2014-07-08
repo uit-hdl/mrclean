@@ -23,6 +23,13 @@ const (
 	SortMsg  = "SortData"
 )
 
+//ports for the components
+const (
+	CoreAddr      string = ":32123"
+	ChronicleAddr string = ":32124"
+	DisplayAddr   string = ":32125"
+)
+
 var (
 	LB *net.UDPAddr = &net.UDPAddr{
 
@@ -186,17 +193,26 @@ type Visual struct {
 	ID int
 	// The name of the visual
 	Name string
-	//The rectangle holding position and size for the visual
+	//The rectangle holding proportion and size for the visual in pixels
 	Rectangle image.Rectangle
 	//The url specifiyng where to find the hvisual
 	URL string
 	//Metadata associated with the visual
 	Meta []string
+	//Origin is the handle to move teh Visual
+	Origin []float64
+	//Size represent the size on screen
+	Size []float64
 }
 
-// A Gestue is a gesture perfirmed by a user.
+// A Gestue is a gesture performed by a user.
 type Gesture struct {
 	ID    int
 	Name  string
 	Param []string
+}
+
+type VisualOrigins struct {
+	Vids    []int
+	Origins [][]float64
 }
