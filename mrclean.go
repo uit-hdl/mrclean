@@ -187,6 +187,18 @@ func McastInterfaces() ([]net.Interface, error) {
 	return ret, nil
 }
 
+// A Gestue is a gesture performed by a user.
+type Gesture struct {
+	ID    int
+	Name  string
+	Param []string
+}
+
+type VisualOrigins struct {
+	Vids    []int
+	Origins [][]float64
+}
+
 // Visual represents a visual object to be displaied.
 type Visual struct {
 	//The id of the visual
@@ -198,21 +210,9 @@ type Visual struct {
 	//The url specifiyng where to find the hvisual
 	URL string
 	//Metadata associated with the visual
-	Meta []string
+	Meta string
 	//Origin is the handle to move teh Visual
 	Origin []float64
 	//Size represent the size on screen
 	Size []float64
-}
-
-// A Gestue is a gesture performed by a user.
-type Gesture struct {
-	ID    int
-	Name  string
-	Param []string
-}
-
-type VisualOrigins struct {
-	Vids    []int
-	Origins [][]float64
 }
