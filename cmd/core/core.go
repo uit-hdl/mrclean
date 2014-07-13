@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
@@ -54,6 +55,17 @@ func main() {
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
+	//TODO get display size
+	var (
+		farg  int
+		reply [2]float64
+	)
+	err = client.Call("Display.Size", farg, &reply)
+	if err != nil {
+		log.Fatal("Display error:", err)
+	}
+	core.DispW = reply[0]
+	core.DispH = reply[1]
 
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGINT)
@@ -62,7 +74,8 @@ func main() {
 
 //All method have rpc signature
 type Core struct {
-	Visuals map[string]*mrclean.Visual
+	Visuals      map[string]*mrclean.Visual
+	DispW, DispH float64
 }
 
 //AddVisual adds a visual received fomr the chronicle
@@ -84,7 +97,6 @@ func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
 
 //Sort handle the gestures received from ths users to sprt the visuals
 func (c *Core) Sort(layersorder string, reply *int) error {
-	//TODO sort stuff
 	layersconf := config["layers"]
 	layers := strings.Split(layersconf, "/")
 	order := strings.Split(layersorder, "/")
@@ -112,8 +124,9 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	for i, l := range layers {
 		swap[i] = ordermap[l]
 	}
+	var dx, dy float64
 
-	//get the visuals in an array with the corrct metadata
+	//get the visuals in an array with the correct meta-data
 	visuals := make([]mrclean.Visual, len(c.Visuals), 0)
 	for _, v := range c.Visuals {
 		//strings for metadata
@@ -125,17 +138,52 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		//for i, s := range sn {
 		//	nlm[s] = i
 		//}
-		//assemple metadata swapping position
+
+		//assemble meta-data swapping position
 		//according to the swap map
 		for l, o := range swap {
 			metastrings[o] = sn[l]
 		}
 		v.Meta = strings.Join(metastrings, "/")
 		visuals = append(visuals, *v)
+		//get the bigger visual to use as placeholder
+		//for the displaying
+		dx = math.Max(dx, v.Size[0])
+		dy = math.Max(dy, v.Size[1])
 	}
 	//SORT
 	By(metaf).Sort(visuals)
+	//loop to put the visuals on screen
+	// evenly spaced and sorted
+	dx += 0.05 //5 cm
+	dy += 0.05 //5 cm
+	var (
+		lastpx, lastpy float64
+		origins        mrclean.VisualOrigins
+		row            float64
+	)
+	for _, v := range c.Visuals {
+		v.Origin[0], v.Origin[1] = lastpx, lastpy
+		//fmt.Println("before: ", v.rect, v.rect.Center())
+		//fmt.Println("after: ", v.rect, v.rect.Center())
+		origins.Vids = append(origins.Vids, v.ID)
+		origins.Origins = append(origins.Origins, v.Origin)
+		//HERE rpc
+		lastpx += dx
+		if lastpx+dx*0.5 > c.DispW {
+			lastpx = c.DispW + dx*0.5
+			row += 1
+			lastpy = c.DispH - row*dy
+		}
+	}
 	//CALL
+	var repl int
+	err := client.Call("Display.SetVisualsOrigin", origins, &repl)
+	if err != nil {
+		return err
+		//log.Println("Display error setting Visuals orgin: ", err)
+	}
+
 	return nil
 }
 
