@@ -55,7 +55,6 @@ func main() {
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
-	//TODO get display size
 	var (
 		farg  int
 		reply [2]float64
