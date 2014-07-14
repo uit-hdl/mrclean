@@ -76,6 +76,7 @@ func (d *Display) AddVisual(vis mrclean.Visual, reply *mrclean.Visual) error {
 	return nil //fmt.Errorf("not implemented")
 }
 
+//set the origin of the visuald according to the slice of VisualOrigins passed
 func (d *Display) SetVisualsOrigin(viso mrclean.VisualOrigins, reply *int) error {
 	err := d.client.SetVisualsOrigin(viso.Vids, viso.Origins)
 	if err != nil {
@@ -91,13 +92,11 @@ func runService(display *Display) {
 	if e != nil {
 		log.Fatal("listen error:", e)
 	}
-
 	for {
 		conn, err := l.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		go rpc.DefaultServer.ServeCodec(jsonrpc.NewServerCodec(conn))
 	}
 }
