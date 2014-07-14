@@ -77,17 +77,17 @@ func (v *Visual) Rect() image.Rectangle {
 	return image.Rect(x0, y0, x1, y1)
 }
 
-//fRect returns a port of image.Ractangle to float64
-func (v *Visual) fRect() Rectangle {
-	s2x := v.Size[0] / 2
-	s2y := v.Size[1] / 2
-
-	x0 := v.Origin[0] - s2x
-	y0 := v.Origin[1] - s2y
-	x1 := v.Origin[0] + s2x
-	y1 := v.Origin[1] + s2y
-	return Rect(x0, y0, x1, y1)
-}
+////fRect returns a port of image.Ractangle to float64
+//func (v *Visual) fRect() Rectangle {
+//	s2x := v.Size[0] / 2
+//	s2y := v.Size[1] / 2
+//
+//	x0 := v.Origin[0] - s2x
+//	y0 := v.Origin[1] - s2y
+//	x1 := v.Origin[0] + s2x
+//	y1 := v.Origin[1] + s2y
+//	return Rect(x0, y0, x1, y1)
+//}
 
 //{"origin": [0.0, 0.0],
 //"description": "7x4 tiled 1024x768 displays",
@@ -108,20 +108,20 @@ type Display struct {
 	Size         []float64 `json:"size,omitempty"`
 	HostName     string    `json:"hostname,omitempty"`
 	Visible      bool      `json:"visible,omitempty"`
-	rect         Rectangle `json:"-"`
+	//rect         Rectangle `json:"-"`
 }
 
-//fRect returns a port of image.Ractangle to float64
-func (d *Display) fRect() Rectangle {
-	s2x := d.Size[0] / 2
-	s2y := d.Size[1] / 2
-
-	x0 := d.Origin[0] - s2x
-	y0 := d.Origin[1] - s2y
-	x1 := d.Origin[0] + s2x
-	y1 := d.Origin[1] + s2y
-	return Rect(x0, y0, x1, y1)
-}
+////fRect returns a port of image.Ractangle to float64
+//func (d *Display) fRect() Rectangle {
+//	s2x := d.Size[0] / 2
+//	s2y := d.Size[1] / 2
+//
+//	x0 := d.Origin[0] - s2x
+//	y0 := d.Origin[1] - s2y
+//	x1 := d.Origin[0] + s2x
+//	y1 := d.Origin[1] + s2y
+//	return Rect(x0, y0, x1, y1)
+//}
 
 //JSON RPC Request
 type RpcReq struct {

@@ -56,9 +56,9 @@ func main() {
 
 // Display is the service exposed via rpc
 type Display struct {
-	Name string
-	geom.Rectangle
-	client *displaycloud.Client
+	Name      string
+	Rectangle geom.Rectangle
+	client    *displaycloud.Client
 	//	Visuals map[string]*mrclean.Visual
 }
 
@@ -84,6 +84,14 @@ func (d *Display) SetVisualsOrigin(viso mrclean.VisualOrigins, reply *int) error
 	}
 	*reply = 0
 	return nil //fmt.Errorf("not implemented")
+}
+
+func (d *Display) Size(flag int, reply *[2]float64) error {
+	reply = &[2]float64{
+		float64(d.Rectangle.Width),
+		float64(d.Rectangle.Height),
+	}
+	return nil
 }
 
 func runService(display *Display) {
