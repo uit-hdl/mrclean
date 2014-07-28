@@ -254,11 +254,17 @@ func ListenWatcher(core *rpc.Client) {
 				//fsz := fsize(ev.Name)
 				//log.Printf("fsize  of %s: %d\n", ev.Name, fsz)
 				if ev.Op&bitmask != 0 && fsize(ev.Name) > 0 {
+					commit, err := gitCommit(ev.Name)
+					if err != nil {
+						log.Println(err)
+						continue
+					}
 
 					arg := mrclean.Visual{
 						Name: relpath,
 						ID:   0,
 						URL:  fmt.Sprintf("http://%s:%s/%s", ip, port, relpath),
+						Meta: commit,
 					}
 					arg.Rectangle.Max.X, arg.Rectangle.Max.Y, err = imgsize(ev.Name)
 					log.Printf("Adding %+v\n", arg)
@@ -282,28 +288,36 @@ func ListenWatcher(core *rpc.Client) {
 				if ev.Op&fsnotify.Chmod == fsnotify.Chmod {
 					continue
 				}
-			}
-			if git {
-				// git stuff
-				cmd := exec.Command("git", "add", ev.Name)
-				cmd.Dir = watch
-				err = cmd.Run()
-				if err != nil { //no error means a git repo is ther already
-					log.Printf("error adding %s to repo %v\n", ev.Name, err)
-					log.Printf("command: %+v\n", cmd)
-					//log.Printf("args: %v\n", cmd.Args)
+				//commit here the change in the script
+				commit, err := gitCommit(ev.Name)
+				if err != nil {
+					log.Println("Error comitting code ", err)
 					continue
 				}
-				message := fmt.Sprintf("\"%s %s\"", session, time.Now().Format(time.RFC3339))
-				cmd = exec.Command("git", "commit", "-am", message)
-				cmd.Dir = watch
-				err = cmd.Run()
-				if err != nil { //no error means a git repo is ther already
-					log.Printf("error committing %s to repo %v\n", ev.Name, err)
-					log.Printf("command: %+v\n", cmd)
-					continue
-				}
-			}
+				log.Println("Committed change in code, commit: ", commit)
+
+			} //switch
+			//if git {
+			//	// git stuff
+			//	cmd := exec.Command("git", "add", ev.Name)
+			//	cmd.Dir = watch
+			//	err = cmd.Run()
+			//	if err != nil { //no error means a git repo is ther already
+			//		log.Printf("error adding %s to repo %v\n", ev.Name, err)
+			//		log.Printf("command: %+v\n", cmd)
+			//		//log.Printf("args: %v\n", cmd.Args)
+			//		continue
+			//	}
+			//	message := fmt.Sprintf("\"%s %s\"", session, time.Now().Format(time.RFC3339))
+			//	cmd = exec.Command("git", "commit", "-am", message)
+			//	cmd.Dir = watch
+			//	err = cmd.Run()
+			//	if err != nil { //no error means a git repo is ther already
+			//		log.Printf("error committing %s to repo %v\n", ev.Name, err)
+			//		log.Printf("command: %+v\n", cmd)
+			//		continue
+			//	}
+			//}
 		case err := <-watcher.Errors:
 			log.Println("error:", err)
 		}
@@ -398,4 +412,39 @@ func imgsize(path string) (int, int, error) {
 		return 0, 0, err
 	}
 	return cfg.Width, cfg.Height, nil
+}
+
+func gitCommit(name string) (string, error) {
+	// git stuff
+	cmd := exec.Command("git", "add", name)
+	cmd.Dir = watch
+	err = cmd.Run()
+	if err != nil { //no error means a git repo is ther already
+		log.Printf("error adding %s to repo %v\n", name, err)
+		log.Printf("command: %+v\n", cmd)
+		//log.Printf("args: %v\n", cmd.Args)
+		return "", err
+	}
+	message := fmt.Sprintf("\"%s %s\"", session, time.Now().Format(time.RFC3339))
+	cmd = exec.Command("git", "commit", "-am", message)
+	cmd.Dir = watch
+	out, err := cmd.Output()
+	if err != nil { //no error means a git repo is ther already
+		log.Printf("error committing %s to repo %v\n", name, err)
+		log.Printf("command: %+v\n", cmd)
+		return "", err
+	}
+	lines := bytes.Split(out, []byte{'\n'})
+	first := lines[0]
+	//fmt.Printf("first:\n%s\n", first)
+	words := bytes.Split(first, []byte{' '})
+	var ret string
+	for _, w := range words {
+		if w[len(w)-1] == ']' {
+			//fmt.Printf("Commit #: %s\n", w[:len(w)-1])
+			ret = string(w[:len(w)-1])
+			break
+		}
+	}
+	return ret, nil
 }
