@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/folago/mrclean"
@@ -75,17 +76,20 @@ func main() {
 type Core struct {
 	Visuals      map[string]*mrclean.Visual
 	DispW, DispH float64
+	sync.Mutex
 }
 
-//AddVisual adds a visual received fomr the chronicle
+//AddVisual adds a visual received from the chronicle
 func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
+	c.Lock()
+	defer c.Unlock()
 	c.Visuals[vis.Name] = vis
 	*reply = 0
 	log.Printf("Added visual %+v\n", vis)
 	log.Println("len(Viausls) ", len(c.Visuals))
 	//adding visual to the display
 	var rvis *mrclean.Visual
-	err := client.Call("Core.AddVisual", *vis, rvis)
+	err := client.Call("Display.AddVisual", *vis, rvis)
 	if err != nil {
 		return err
 	}
@@ -96,6 +100,8 @@ func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
 
 //Sort handle the gestures received from ths users to sprt the visuals
 func (c *Core) Sort(layersorder string, reply *int) error {
+	c.Lock()
+	defer c.Unlock()
 	layersconf := config["layers"]
 	layers := strings.Split(layersconf, "/")
 	order := strings.Split(layersorder, "/")

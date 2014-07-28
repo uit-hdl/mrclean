@@ -190,13 +190,13 @@ func WatchWalk(path string, info os.FileInfo, err error) error {
 	return nil
 }
 
-//ListenWatcher listens to the watrcher and implments the logic.
+//ListenWatcher listens to the watcher and implments the logic.
 //We register the creation  events in a set and when we receive
 //a modify event (no attribute, a proper file write) we consider the
 //file completed. Now we can safaly read the image.
 //The events from the OS area  bit strange:
 // trash: RENAME
-// copy: CREATE, CHMOD, CHMOD, WRITE|CHMOD, CHMOD, CHMOD, CHMOD,CHMOD
+// copy: CREATE, CHMOD, CHMOD, WRITE|CHMOD, CHMOD, CHMOD, CHMOD, CHMOD
 // delete: REMOVE
 // move: CREATE, CHMOD
 // save vim: RENAME, CREATE, CHMOD
@@ -250,7 +250,7 @@ func ListenWatcher(core *rpc.Client) {
 			case reImg.MatchString(filepath.Ext(ev.Name)):
 				//got an image if it's a write or a create event we look for the
 				//file size, a create with a 0 file size means the file is being copied
-				// ans is not ready. We continue ans wait for a write event.
+				// and is not ready. We continue and wait for a write event.
 				//fsz := fsize(ev.Name)
 				//log.Printf("fsize  of %s: %d\n", ev.Name, fsz)
 				if ev.Op&bitmask != 0 && fsize(ev.Name) > 0 {
@@ -278,7 +278,7 @@ func ListenWatcher(core *rpc.Client) {
 					continue
 				}
 			case reScr.MatchString(filepath.Ext(ev.Name)):
-				//anything ut a chmod is good for a script
+				//anything but a chmod is good for a script
 				if ev.Op&fsnotify.Chmod == fsnotify.Chmod {
 					continue
 				}
