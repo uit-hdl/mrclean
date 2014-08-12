@@ -209,7 +209,7 @@ func WatchWalk(path string, info os.FileInfo, err error) error {
 func ListenWatcher(core *rpc.Client) {
 	reImg := regexp.MustCompile(`\.(PNG|png|JPEG|JPG|jpeg|jpg)$`)
 	reScr := regexp.MustCompile(`\.(r|R)$`)
-	hidden := regexp.MustCompile(`/\.`)
+	hidden := regexp.MustCompile(`^\. | /\.`)
 	// this is the bit mask to filter image file events. We use
 	//crete and write and teh file zize to see if the file is ready.
 	bitmask := fsnotify.Write | fsnotify.Create
