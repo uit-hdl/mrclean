@@ -1,5 +1,10 @@
-// Chronicle is a aomponent that monitors a directory in the file sysems
-//and provide a chronicle of the changes in it.
+/* Chronicle is a aomponent that monitors a directory in the file sysems
+and provide a chronicle of the changes in it.
+
+
+
+
+*/
 package main
 
 import (
