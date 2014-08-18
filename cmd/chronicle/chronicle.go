@@ -50,6 +50,8 @@ var (
 	ip, port string = "127.0.0.1", "8089"
 	//Core component RPC server address
 	corerpc string
+	//netconn is the transport protocol for the connection
+	netconn string
 
 	client  *rpc.Client
 	watcher *fsnotify.Watcher
@@ -61,19 +63,20 @@ func init() {
 	flag.StringVar(&session,
 		"session", "mrclean", "Name of the session.")
 	flag.StringVar(&corerpc,
-		"corerpc", mrclean.ChronicleAddr,
+		"corerpc", mrclean.CoreAddr,
 		"IP:PORT of the Core RPC server")
 	flag.StringVar(&rpcserver,
 		"rpcserver", mrclean.ChronicleAddr,
 		"IP:PORT of the rpc server, defaults to localhost:32124")
 	flag.StringVar(&watch, "watch", "./watch",
 		"Specifies the path to watch, default to ./watch")
+	flag.StringVar(&netconn, "net", "tcp", "Specifies the connection protocol: tcp, udp, unix etc..")
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
 func main() {
 	flag.Parse()
-	client, err = jsonrpc.Dial("tcp", corerpc)
+	client, err = jsonrpc.Dial(netconn, corerpc)
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
@@ -133,8 +136,18 @@ func main() {
 }
 
 func GitInit() error {
+	//print working dir
+	cmd := exec.Command("pwd")
+	//cmd.Dir = watch
+	//cmd.Dir = scripts
+	err = cmd.Run()
+	if err != nil {
+		log.Println("pwd error")
+		return err
+
+	}
 	//check if git is installed
-	cmd := exec.Command("git", "--version")
+	cmd = exec.Command("git", "--version")
 	cmd.Dir = watch
 	//cmd.Dir = scripts
 	err := cmd.Run()
@@ -150,7 +163,7 @@ func GitInit() error {
 	cmd.Stderr = &out
 	err = cmd.Run()
 	if err == nil { //no error means a git repo is ther already
-		log.Printf("WARNING: a git repo is already in place in %s , script verson control disabled\n", scripts)
+		log.Printf("A git repo is already in place\n")
 		return err
 	}
 	//log.Println("no error, scanning")
@@ -168,7 +181,7 @@ func GitInit() error {
 	}
 	log.Printf("no git repo found in %s, initializing one for Mr.Clean\n", scripts)
 	cmd = exec.Command("git", "init")
-	cmd.Dir = watch
+	//cmd.Dir = watch
 	//cmd.Dir = scripts
 	err = cmd.Run()
 	if err != nil {
@@ -266,23 +279,26 @@ func ListenWatcher(core *rpc.Client) {
 					}
 
 					arg := mrclean.Visual{
-						Name: relpath,
-						ID:   0,
-						URL:  fmt.Sprintf("http://%s:%s/%s", ip, port, relpath),
-						Meta: commit,
+						Name:   relpath,
+						ID:     0,
+						URL:    fmt.Sprintf("http://%s:%s/%s", ip, port, relpath),
+						Commit: commit,
+						//Origin: []float64{0,0},
+						//Size: []float64{0,0},
+
 					}
 					arg.Rectangle.Max.X, arg.Rectangle.Max.Y, err = imgsize(ev.Name)
-					log.Printf("Adding %+v\n", arg)
 					if err != nil {
 						log.Println(err)
 					}
+					log.Printf("Adding %+v\n", arg)
 					var reply *int
 					//send img data to MR. Clean
 					err = client.Call("Core.AddVisual", arg, &reply)
 					if err != nil {
 						log.Println("Core.AddVisual error:", err)
 					}
-					if *reply != 0 {
+					if reply != nil && *reply != 0 {
 						log.Println("Error adding Visual!!")
 					}
 				} else {
@@ -422,7 +438,7 @@ func imgsize(path string) (int, int, error) {
 func gitCommit(name string) (string, error) {
 	// git stuff
 	cmd := exec.Command("git", "add", name)
-	cmd.Dir = watch
+	//cmd.Dir = watch
 	err = cmd.Run()
 	if err != nil { //no error means a git repo is ther already
 		log.Printf("error adding %s to repo %v\n", name, err)

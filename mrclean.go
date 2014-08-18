@@ -209,10 +209,12 @@ type Visual struct {
 	Rectangle image.Rectangle
 	//The url specifiyng where to find the hvisual
 	URL string
+	//commit number
+	Commit string
 	//Metadata associated with the visual
 	Meta string
 	//Origin is the handle to move teh Visual
-	Origin []float64
+	Origin []float64 //`json:"omitempty"`
 	//Size represent the size on screen
-	Size []float64
+	Size []float64 //`json:"omitempty"`
 }
