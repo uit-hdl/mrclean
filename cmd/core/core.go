@@ -69,6 +69,7 @@ func main() {
 	}
 	core.DispW = reply[0]
 	core.DispH = reply[1]
+	log.Printf("core.DispW: %f, core.DispH: %f\n", core.DispW, core.DispH)
 
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGINT)
@@ -86,20 +87,24 @@ type Core struct {
 func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
 	c.Lock.Lock()
 	defer c.Lock.Unlock()
-	c.Visuals[vis.Name] = vis
+	//c.Visuals[vis.Name] = vis
 	*reply = 0
-	log.Printf("Added visual %+v\n", vis)
-	log.Println("len(Viausls) ", len(c.Visuals))
+	log.Printf("Received visual %+v\n", vis)
 	//adding visual to the display
-	rvis := &mrclean.Visual{}
+	rvis := &mrclean.Visual{
+		Origin: make([]float64, 2),
+		Size:   make([]float64, 2),
+	}
 	err := client.Call("Display.AddVisual", vis, rvis)
 	if err != nil {
 		log.Println(err)
 		//maye just return nil? chronicle cannot do much a this point
-		return err
+		//return err
 	}
 	//the rpc result has all the data so we put that in the map
 	c.Visuals[rvis.Name] = rvis
+	log.Printf("Added visual %+v\n", rvis)
+	log.Println("len(Visuals) ", len(c.Visuals))
 	return nil
 }
 
@@ -126,7 +131,7 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	for _, s := range layers {
 		_, ok := ordermap[s]
 		if !ok {
-			log.Println("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
+			log.Printf("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
 			*reply = -1
 			return fmt.Errorf("sorting layers elements differ from configuraion")
 		}
@@ -168,6 +173,7 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		dx = math.Max(dx, v.Size[0])
 		dy = math.Max(dy, v.Size[1])
 	}
+	log.Printf("sorting: len(visuals) = %v\n", len(visuals))
 	//SORT
 	By(metaf).Sort(visuals)
 	//loop to put the visuals on screen
@@ -175,16 +181,19 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	dx += 0.05 //5 cm
 	dy += 0.05 //5 cm
 	var (
-		lastpx, lastpy float64
-		origins        mrclean.VisualOrigins
-		row            float64
+		lastpx                         = -c.DispW*0.5 + dx*0.5
+		lastpy                         = c.DispH*0.5 - dy*0.5
+		origins *mrclean.VisualOrigins = mrclean.NewVisualOrigins()
+		row     float64
 	)
-	for _, v := range c.Visuals {
-		v.Origin[0], v.Origin[1] = lastpx, lastpy
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+	for i := range visuals {
+		visuals[i].Origin[0], visuals[i].Origin[1] = lastpx, lastpy
+		log.Println("Origin: ", visuals[i].Origin)
 		//fmt.Println("before: ", v.rect, v.rect.Center())
 		//fmt.Println("after: ", v.rect, v.rect.Center())
-		origins.Vids = append(origins.Vids, v.ID)
-		origins.Origins = append(origins.Origins, v.Origin)
+		origins.Vids = append(origins.Vids, visuals[i].ID)
+		origins.Origins = append(origins.Origins, visuals[i].Origin)
 		//HERE rpc
 		lastpx += dx
 		if lastpx+dx*0.5 > c.DispW {
@@ -194,15 +203,16 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		}
 	}
 	//CALL
-	var repl *int
-	err := client.Call("Display.SetVisualsOrigin", origins, repl)
+	var repl int = 0
+	log.Printf("calling Display.SetVisualsOrigin %v\n", origins)
+	err := client.Call("Display.SetVisualsOrigin", origins, &repl)
 	if err != nil {
 		*reply = -1
+		log.Println("Display error setting Visuals orgin: ", err)
 		return err
-		//log.Println("Display error setting Visuals orgin: ", err)
 	}
-	if repl != nil && *repl == 0 {
-		reply = repl
+	if repl == 0 {
+		reply = &repl
 	} else {
 		log.Println("Something happened during Display.SetVisualsOrigin ", repl)
 		*reply = -1
