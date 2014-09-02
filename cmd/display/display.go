@@ -69,8 +69,8 @@ func (d *Display) AddVisual(vis *mrclean.Visual, reply *mrclean.Visual) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("Adding Visual: %+v\n\n\n\n\n", *vis)
-	log.Printf("Received Visual: %+v\n\n\n\n", *dcvis)
+	//log.Printf("Adding Visual: %+v\n\n\n\n\n", *vis)
+	//log.Printf("Received Visual: %+v\n\n\n\n", *dcvis)
 	//reply = &mrclean.Visual{}
 	//*reply = *vis
 
@@ -86,7 +86,7 @@ func (d *Display) AddVisual(vis *mrclean.Visual, reply *mrclean.Visual) error {
 	//	log.Println("Wrong numberof element in Size: %+v!=%+v n: %d\n", reply.Size, dcvis.Size, n)
 	//}
 	reply.ID = dcvis.ID
-	log.Printf("Reply Visual: %+v\n\n\n\n\n", *reply)
+	//log.Printf("Reply Visual: %+v\n\n\n\n\n", *reply)
 	return nil //fmt.Errorf("not implemented")
 }
 

@@ -102,9 +102,12 @@ func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
 		*reply = -1
 		return err
 	}
-	//the rpc result has all the data so we put that in the map
-	c.Visuals[rvis.Name] = &rvis
-	log.Printf("Added visual %+v\n", rvis)
+	//the rpc result has the missing data so we update the visual and put it in the map
+	vis.Origin = rvis.Origin
+	vis.Size = rvis.Size
+	vis.ID = rvis.ID
+	c.Visuals[vis.Name] = vis
+	log.Printf("Added visual %+v\n", vis)
 	log.Println("len(Visuals) ", len(c.Visuals))
 	return nil
 }
