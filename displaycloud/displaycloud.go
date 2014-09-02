@@ -49,18 +49,19 @@ type Event struct {
 }
 
 type Visual struct {
-	Origin       []float64 `json:"origin,omitempty"`
-	Description  string    `json:"description,omitempty"`
-	Name         string    `json:"name,omitempty"`
-	Type         string    `json:"type,omitempty"`
-	ID           int       `json:"id,omitempty"`
-	DPI          []float64 `json:"dpi,omitempty"`
-	SizeDiscrete []int     `json:"size_discrete,omitempty"`
-	Size         []float64 `json:"size,omitempty"`
-	VNCServer    string    `json:"vnc_server,omitempty"`
-	DPIHint      []float64 `json:"dpi_hint,omitempty"`
-	PicGeometry  []float64 `json:"pic_geometry,omitempty"`
-	URL          string    `json:"pic_url,omitempty"`
+	Origin          []float64 `json:"origin,omitempty"`
+	Description     string    `json:"description,omitempty"`
+	Name            string    `json:"name,omitempty"`
+	Type            string    `json:"type,omitempty"`
+	ID              int       `json:"id,omitempty"`
+	DPI             []float64 `json:"dpi,omitempty"`
+	SizeDiscreteBug []int     `json:"sizeDiscrete,omitempty"`
+	SizeDiscrete    []int     `json:"size_discrete,omitempty"`
+	Size            []float64 `json:"size,omitempty"`
+	VNCServer       string    `json:"vnc_server,omitempty"`
+	DPIHint         []float64 `json:"dpi_hint,omitempty"`
+	PicGeometry     []float64 `json:"pic_geometry,omitempty"`
+	URL             string    `json:"pic_url,omitempty"`
 	//rect             Rectangle `json:"-"`
 	mrclean.MetaData `json:"-"`
 }
@@ -472,11 +473,12 @@ func (cli *Client) AddVisual(vis mrclean.Visual) (*Visual, error) {
 	log.Println("got it!")
 	//check for error
 	if res.Error != nil {
-		return nil, fmt.Errorf("%+v", res.Error)
+		return nil, fmt.Errorf("Error: %+v", res.Error)
 	}
+	log.Printf("Result: %s", string(res.Result))
 	//decode the result
-	vis2 := &Visual{}
-	err = json.Unmarshal(res.Result, vis2)
+	vis2 := Visual{}
+	err = json.Unmarshal(res.Result, &vis2)
 	if err != nil {
 		return nil, fmt.Errorf("Error decoding Rpc result %v", err)
 	}
@@ -492,10 +494,10 @@ func (cli *Client) AddVisual(vis mrclean.Visual) (*Visual, error) {
 	//vis.Description = msgin.MetaData.String()
 
 	//vismap[vis.Name] = vis
-	log.Printf("%+v\n", vis2)
+	log.Printf("Visual: %+v\n", vis2)
 	//pendingVis[req.ID] = req
 
-	return vis2, nil
+	return &vis2, nil
 
 }
 

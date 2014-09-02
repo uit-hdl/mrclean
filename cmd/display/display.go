@@ -23,8 +23,8 @@ var (
 
 func init() {
 	flag.StringVar(&displaycloudurl,
-		"displaycloudurl", "ws://10.1.255.77:8088/ws_rpc_events",
-		"URL of the websocket for displaycloud, default ws://10.1.255.77:8088/ws_rpc_events")
+		"displaycloudurl", "ws://10.1.1.5:8088/ws_rpc_events",
+		"URL of the websocket for displaycloud, default ws://10.1.1.5:8088/ws_rpc_events")
 	flag.StringVar(&rpcserver,
 		"rpcserver", mrclean.DisplayAddr,
 		"IP:PORT of the rpc server, defaults to localhost:32123")
@@ -64,20 +64,37 @@ type Display struct {
 
 // The Display methods signatures follow the RPC rules
 // See http://golang.org/pkg/net/rpc/
-func (d *Display) AddVisual(vis mrclean.Visual, reply *mrclean.Visual) error {
-	dcvis, err := d.client.AddVisual(vis)
+func (d *Display) AddVisual(vis *mrclean.Visual, reply *mrclean.Visual) error {
+	dcvis, err := d.client.AddVisual(*vis)
 	if err != nil {
 		return err
 	}
+	log.Printf("Adding Visual: %+v\n\n\n\n\n", *vis)
+	log.Printf("Received Visual: %+v\n\n\n\n", *dcvis)
+	//reply = &mrclean.Visual{}
+	//*reply = *vis
+
+	reply.Origin = make([]float64, 2)
+	reply.Size = make([]float64, 2)
 	//fill the remaining fields
-	vis.Origin = dcvis.Origin
-	vis.Size = dcvis.Size
-	reply = &vis
+	reply.Origin[0], reply.Origin[1] = dcvis.Origin[0], dcvis.Origin[1]
+	reply.Size[0], reply.Size[1] = dcvis.Size[0], dcvis.Size[1]
+	//if n := copy(reply.Origin, dcvis.Origin); n != 2 {
+	//	log.Printf("Wrong numberof element in Origin: %+v!=%+v n: %d\n", reply.Origin, dcvis.Origin, n)
+	//}
+	//if n := copy(reply.Size, dcvis.Size); n != 2 {
+	//	log.Println("Wrong numberof element in Size: %+v!=%+v n: %d\n", reply.Size, dcvis.Size, n)
+	//}
+	reply.ID = dcvis.ID
+	log.Printf("Reply Visual: %+v\n\n\n\n\n", *reply)
 	return nil //fmt.Errorf("not implemented")
 }
 
 //set the origin of the visuald according to the slice of VisualOrigins passed
 func (d *Display) SetVisualsOrigin(viso mrclean.VisualOrigins, reply *int) error {
+	if len(viso.Vids) != len(viso.Origins) {
+		log.Printf("Mismatched length of IDs and Origins: %d != %d\n", len(viso.Vids) != len(viso.Origins))
+	}
 	err := d.client.SetVisualsOrigin(viso.Vids, viso.Origins)
 	if err != nil {
 		return err
