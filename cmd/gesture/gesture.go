@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 
 	"log"
 
-	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"os"
@@ -26,6 +27,8 @@ var (
 	configfile string
 	//config is map of configuration options
 	config map[string]string
+	//netconn is the transport protocol for the connection
+	netconn string
 )
 
 func init() {
@@ -33,7 +36,9 @@ func init() {
 		"corerpc", mrclean.CoreAddr,
 		"IP:PORT of the Core RPC server")
 	flag.StringVar(&configfile,
-		"configfile", "config.json", "Configuration file for Mr. Clean")
+		"configfile", "config.json", "Configuration file for Mr. Clean gestures")
+	flag.StringVar(&netconn, "net", "tcp", "Specifies the connection protocol: tcp, udp, unix etc..")
+
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
@@ -44,16 +49,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var (
-		farg  int
-		reply [2]float64
-	)
-	err = client.Call("Display.Size", farg, &reply)
+	client, err = jsonrpc.Dial(netconn, corerpc)
 	if err != nil {
-		log.Fatal("Display error:", err)
+		log.Fatal("dialing:", err)
 	}
-	core.DispW = reply[0]
-	core.DispH = reply[1]
+	//fmt.Println("Exanmple of message: ", string(buff))
+	go StdInput()
 
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGINT)
@@ -78,20 +79,24 @@ func ReadConfig(fname string) (map[string]string, error) {
 	return config, nil
 }
 
-//runs the given object as an RPC service using JSON as encoding
-func srunService(core *Core) {
-	rpc.Register(core)
-	l, e := net.Listen("tcp", rpcserver)
-	if e != nil {
-		log.Fatal("listen error:", e)
-	}
+func StdInput() {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Print("cmd>")
+	var ret int
 
-	for {
-		conn, err := l.Accept()
+	for scanner.Scan() {
+		fmt.Println("SEND :", scanner.Text()) // Println will add back the final '\n'
+		err := client.Call("Core.Sort", scanner.Text(), &ret)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 		}
-
-		go rpc.DefaultServer.ServeCodec(jsonrpc.NewServerCodec(conn))
+		if ret == -1 {
+			log.Printf("something wrong in the sorting")
+		}
+		fmt.Print("cmd>")
 	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+	}
+
 }
