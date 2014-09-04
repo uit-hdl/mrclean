@@ -10,7 +10,7 @@ import (
 	"net/rpc/jsonrpc"
 	"os"
 
-	"github.com/folago/mrclean"
+	"github.com/UniversityofTromso/mrclean"
 )
 
 var (

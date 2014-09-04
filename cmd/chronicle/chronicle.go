@@ -28,7 +28,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/folago/mrclean"
+	"github.com/UniversityofTromso/mrclean"
 	"github.com/fsnotify/fsnotify"
 )
 

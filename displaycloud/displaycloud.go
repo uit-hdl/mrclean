@@ -7,7 +7,7 @@ import (
 	"log"
 	"math"
 
-	"github.com/folago/mrclean"
+	"github.com/UniversityofTromso/mrclean"
 	"github.com/gorilla/websocket"
 )
 
@@ -108,20 +108,20 @@ type Display struct {
 	Size         []float64 `json:"size,omitempty"`
 	HostName     string    `json:"hostname,omitempty"`
 	Visible      bool      `json:"visible,omitempty"`
-	rect         Rectangle `json:"-"`
+	//rect         Rectangle `json:"-"`
 }
 
 //fRect returns a port of image.Ractangle to float64
-func (d *Display) fRect() Rectangle {
-	s2x := d.Size[0] / 2
-	s2y := d.Size[1] / 2
-
-	x0 := d.Origin[0] - s2x
-	y0 := d.Origin[1] - s2y
-	x1 := d.Origin[0] + s2x
-	y1 := d.Origin[1] + s2y
-	return Rect(x0, y0, x1, y1)
-}
+//func (d *Display) fRect() Rectangle {
+//	s2x := d.Size[0] / 2
+//	s2y := d.Size[1] / 2
+//
+//	x0 := d.Origin[0] - s2x
+//	y0 := d.Origin[1] - s2y
+//	x1 := d.Origin[0] + s2x
+//	y1 := d.Origin[1] + s2y
+//	return Rect(x0, y0, x1, y1)
+//}
 
 //JSON RPC Request
 type RpcReq struct {
@@ -412,7 +412,7 @@ func (cli *Client) displayInfo() (*Display, error) {
 	//	log.Println(dwList)
 
 	display := dwList[0]
-	display.rect = display.fRect()
+	//display.rect = display.fRect()
 	log.Printf("%+v\n", dwList[0])
 	cli.Display = display //dwList[0]
 	//return &dwList[0], nil

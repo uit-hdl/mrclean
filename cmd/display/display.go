@@ -11,9 +11,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/UniversityofTromso/mrclean"
+	"github.com/UniversityofTromso/mrclean/displaycloud"
 	geom "github.com/folago/googlmath"
-	"github.com/folago/mrclean"
-	"github.com/folago/mrclean/displaycloud"
 )
 
 var (

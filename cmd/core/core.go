@@ -16,7 +16,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/folago/mrclean"
+	"github.com/UniversityofTromso/mrclean"
 )
 
 var (

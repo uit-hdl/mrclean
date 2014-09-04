@@ -3,7 +3,7 @@ package main
 import (
 	"sort"
 
-	"github.com/folago/mrclean"
+	"github.com/UniversityofTromso/mrclean"
 )
 
 //coypasta from stdlib
