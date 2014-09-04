@@ -243,7 +243,7 @@ func DisplayGroupInfo() RpcReq {
 		ID:      <-id,
 		Method:  "displaygroups_get_info",
 		//we need to pass a slice or the json encoding will
-		// ne null and it pisses off torado
+		// be null and it pisses off torado
 		Params: []int{}}
 	log.Println("call: ", call)
 	return call
@@ -332,12 +332,12 @@ func Dial(url string) (*Client, error) {
 	// start the asynch goroutine for the RPC response
 	go eventHandler(cli.evtChan)
 	go cli.handleConn()
-	d, err := cli.displayInfo()
+	err = cli.displayInfo()
 	if err != nil {
 		//without display info makes no sense ot proceed
 		log.Fatal(err)
 	}
-	cli.Display = *d
+	//cli.Display = *d
 	return cli, nil
 }
 func (cli *Client) handleConn() {
@@ -381,18 +381,18 @@ func (cli *Client) handleConn() {
 	}
 }
 
-func (cli *Client) displayInfo() (*Display, error) {
+func (cli *Client) displayInfo() error {
 	log.Println("getting the display wall info")
 	dwinfo := DisplayGroupInfo()
 	buff, err := json.Marshal(dwinfo)
 	if err != nil {
 		//log.Fatal("Error marshaling display wall info req: ", err)
-		return nil, err
+		return err
 	}
 	err = cli.conn.WriteMessage(websocket.TextMessage, buff)
 	if err != nil {
 		//log.Println("Error sending request: ", err)
-		return nil, err
+		return err
 	}
 	log.Println("SENT: ", string(buff))
 	log.Println("waiting for rpc resp on channel...")
@@ -400,24 +400,25 @@ func (cli *Client) displayInfo() (*Display, error) {
 	log.Println("got it!")
 	//check for error
 	if res.Error != nil {
-		return nil, fmt.Errorf("%+v", res.Error)
+		return fmt.Errorf("%+v", res.Error)
 		//log.Fatalln(res.Error)
 	}
 	//decode the result
 	dwList := []Display{}
 	err = json.Unmarshal(res.Result, &dwList)
 	if err != nil {
-		return nil, err
+		return err
 		//log.Println("Error decoding Rpc result ", err)
 	}
 	//	log.Println(dwList)
 
-	display := dwList[0]
-	display.rect = display.fRect()
-	log.Printf("%+v\n", dwList[0])
-	cli.Display = display //dwList[0]
+	cli.Display = dwList[0]
+	//cli.Display.rect = cli.Display.fRect()
+	log.Printf("Received: %+v\n", dwList[0])
+	//log.Printf("Set: %+v\n", cli.Display)
+	//cli.Display = display //dwList[0]
 	//return &dwList[0], nil
-	return &display, nil
+	return nil
 }
 
 func (cli *Client) AddVisual(vis mrclean.Visual) (*Visual, error) {
@@ -529,3 +530,41 @@ func (cli *Client) SetVisualsOrigin(vids []int, poss [][]float64) error {
 	}
 	return nil
 }
+
+//
+//func (cli *Client) DisplayInfo() error {
+//
+//	req := DisplayGroupInfo()
+//	buff, err := json.Marshal(req)
+//	if err != nil {
+//		return fmt.Errorf("Error sending: %v", err)
+//	}
+//	//err := ws.WriteJSON(req)
+//	err = cli.conn.WriteMessage(websocket.TextMessage, buff)
+//	if err != nil {
+//		return fmt.Errorf("Error sending reqrest: ", err)
+//	}
+//	log.Println("SENT: ", string(buff))
+//	//TODO see if we can avoid waiting for the response
+//	//by omittin the req id
+//	log.Println("waiting for rpc resp on channel...")
+//	res := <-cli.rpcChan
+//	log.Println("got it!")
+//	//check for error
+//	if res.Error != nil {
+//		return fmt.Errorf("Error sorting on Display, %v", res.Error)
+//	}
+//	//decode the result
+//	dwList := []Display{}
+//	err = json.Unmarshal(res.Result, &dwList)
+//	if err != nil {
+//		return fmt.Errorf("Error decoding Rpc result ", err)
+//	}
+//	//	log.Println(dwList)
+//
+//	cli.Display = dwList[0]
+//	cli.Display.rect = cli.Display.fRect()
+//	log.Printf("%+v\n", cli.Display)
+//
+//	return nil
+//}

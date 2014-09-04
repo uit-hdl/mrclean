@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	geom "github.com/folago/googlmath"
 	"github.com/folago/mrclean"
 	"github.com/folago/mrclean/displaycloud"
 )
@@ -56,9 +55,9 @@ func main() {
 
 // Display is the service exposed via rpc
 type Display struct {
-	Name      string
-	Rectangle geom.Rectangle
-	client    *displaycloud.Client
+	Name string
+	//Rectangle geom.Rectangle
+	client *displaycloud.Client
 	//	Visuals map[string]*mrclean.Visual
 }
 
@@ -79,14 +78,7 @@ func (d *Display) AddVisual(vis *mrclean.Visual, reply *mrclean.Visual) error {
 	//fill the remaining fields
 	reply.Origin[0], reply.Origin[1] = dcvis.Origin[0], dcvis.Origin[1]
 	reply.Size[0], reply.Size[1] = dcvis.Size[0], dcvis.Size[1]
-	//if n := copy(reply.Origin, dcvis.Origin); n != 2 {
-	//	log.Printf("Wrong numberof element in Origin: %+v!=%+v n: %d\n", reply.Origin, dcvis.Origin, n)
-	//}
-	//if n := copy(reply.Size, dcvis.Size); n != 2 {
-	//	log.Println("Wrong numberof element in Size: %+v!=%+v n: %d\n", reply.Size, dcvis.Size, n)
-	//}
 	reply.ID = dcvis.ID
-	//log.Printf("Reply Visual: %+v\n\n\n\n\n", *reply)
 	return nil //fmt.Errorf("not implemented")
 }
 
@@ -104,10 +96,9 @@ func (d *Display) SetVisualsOrigin(viso mrclean.VisualOrigins, reply *int) error
 }
 
 func (d *Display) Size(flag int, reply *[2]float64) error {
-	reply = &[2]float64{
-		float64(d.Rectangle.Width),
-		float64(d.Rectangle.Height),
-	}
+	reply[0] = float64(d.client.Display.Size[0])
+	reply[1] = float64(d.client.Display.Size[1])
+	//log.Println("Sending Size: ", reply)
 	return nil
 }
 
