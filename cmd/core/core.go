@@ -91,19 +91,23 @@ func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
 	*reply = 0
 	log.Printf("Received visual %+v\n", vis)
 	//adding visual to the display
-	rvis := &mrclean.Visual{
-		Origin: make([]float64, 2),
-		Size:   make([]float64, 2),
+	rvis := mrclean.Visual{
+	//Origin: make([]float64, 2),
+	//Size:   make([]float64, 2),
 	}
-	err := client.Call("Display.AddVisual", vis, rvis)
+	err := client.Call("Display.AddVisual", vis, &rvis)
 	if err != nil {
 		log.Println(err)
 		//maye just return nil? chronicle cannot do much a this point
-		//return err
+		*reply = -1
+		return err
 	}
-	//the rpc result has all the data so we put that in the map
-	c.Visuals[rvis.Name] = rvis
-	log.Printf("Added visual %+v\n", rvis)
+	//the rpc result has the missing data so we update the visual and put it in the map
+	vis.Origin = rvis.Origin
+	vis.Size = rvis.Size
+	vis.ID = rvis.ID
+	c.Visuals[vis.Name] = vis
+	log.Printf("Added visual %+v\n", vis)
 	log.Println("len(Visuals) ", len(c.Visuals))
 	return nil
 }
@@ -149,6 +153,7 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		//strings for metadata
 		metastrings := make([]string, len(layers))
 		// layers in the name
+		log.Printf("splitting for metadata: %s", v.Name)
 		sn := strings.Split(v.Name, string(os.PathSeparator))
 		if len(sn) != len(metastrings) {
 			log.Printf("WARNING: metadata and path of images are of different length, path is %d and shuld be %d\n",

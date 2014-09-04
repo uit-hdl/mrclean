@@ -13,7 +13,6 @@ import (
 
 	"github.com/UniversityofTromso/mrclean"
 	"github.com/UniversityofTromso/mrclean/displaycloud"
-	geom "github.com/folago/googlmath"
 )
 
 var (
@@ -23,8 +22,8 @@ var (
 
 func init() {
 	flag.StringVar(&displaycloudurl,
-		"displaycloudurl", "ws://10.1.255.77:8088/ws_rpc_events",
-		"URL of the websocket for displaycloud, default ws://10.1.255.77:8088/ws_rpc_events")
+		"displaycloudurl", "ws://10.1.1.5:8088/ws_rpc_events",
+		"URL of the websocket for displaycloud, default ws://10.1.1.5:8088/ws_rpc_events")
 	flag.StringVar(&rpcserver,
 		"rpcserver", mrclean.DisplayAddr,
 		"IP:PORT of the rpc server, defaults to localhost:32123")
@@ -56,28 +55,38 @@ func main() {
 
 // Display is the service exposed via rpc
 type Display struct {
-	Name      string
-	Rectangle geom.Rectangle
-	client    *displaycloud.Client
+	Name string
+	//Rectangle geom.Rectangle
+	client *displaycloud.Client
 	//	Visuals map[string]*mrclean.Visual
 }
 
 // The Display methods signatures follow the RPC rules
 // See http://golang.org/pkg/net/rpc/
-func (d *Display) AddVisual(vis mrclean.Visual, reply *mrclean.Visual) error {
-	dcvis, err := d.client.AddVisual(vis)
+func (d *Display) AddVisual(vis *mrclean.Visual, reply *mrclean.Visual) error {
+	dcvis, err := d.client.AddVisual(*vis)
 	if err != nil {
 		return err
 	}
+	//log.Printf("Adding Visual: %+v\n\n\n\n\n", *vis)
+	//log.Printf("Received Visual: %+v\n\n\n\n", *dcvis)
+	//reply = &mrclean.Visual{}
+	//*reply = *vis
+
+	reply.Origin = make([]float64, 2)
+	reply.Size = make([]float64, 2)
 	//fill the remaining fields
-	vis.Origin = dcvis.Origin
-	vis.Size = dcvis.Size
-	reply = &vis
+	reply.Origin[0], reply.Origin[1] = dcvis.Origin[0], dcvis.Origin[1]
+	reply.Size[0], reply.Size[1] = dcvis.Size[0], dcvis.Size[1]
+	reply.ID = dcvis.ID
 	return nil //fmt.Errorf("not implemented")
 }
 
 //set the origin of the visuald according to the slice of VisualOrigins passed
 func (d *Display) SetVisualsOrigin(viso mrclean.VisualOrigins, reply *int) error {
+	if len(viso.Vids) != len(viso.Origins) {
+		log.Printf("Mismatched length of IDs and Origins: %d != %d\n", len(viso.Vids) != len(viso.Origins))
+	}
 	err := d.client.SetVisualsOrigin(viso.Vids, viso.Origins)
 	if err != nil {
 		return err
@@ -87,10 +96,9 @@ func (d *Display) SetVisualsOrigin(viso mrclean.VisualOrigins, reply *int) error
 }
 
 func (d *Display) Size(flag int, reply *[2]float64) error {
-	reply = &[2]float64{
-		float64(d.Rectangle.Width),
-		float64(d.Rectangle.Height),
-	}
+	reply[0] = float64(d.client.Display.Size[0])
+	reply[1] = float64(d.client.Display.Size[1])
+	//log.Println("Sending Size: ", reply)
 	return nil
 }
 
