@@ -199,6 +199,13 @@ type VisualOrigins struct {
 	Origins [][]float64
 }
 
+func NewVisualOrigins() *VisualOrigins {
+	return &VisualOrigins{
+		Vids:    make([]int, 0, 10),
+		Origins: make([][]float64, 0, 10),
+	}
+}
+
 // Visual represents a visual object to be displaied.
 type Visual struct {
 	//The id of the visual
@@ -209,10 +216,12 @@ type Visual struct {
 	Rectangle image.Rectangle
 	//The url specifiyng where to find the hvisual
 	URL string
+	//commit number
+	Commit string
 	//Metadata associated with the visual
 	Meta string
 	//Origin is the handle to move teh Visual
-	Origin []float64
+	Origin []float64 //`json:"omitempty"`
 	//Size represent the size on screen
-	Size []float64
+	Size []float64 //`json:"omitempty"`
 }

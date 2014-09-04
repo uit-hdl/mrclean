@@ -8,13 +8,13 @@ import (
 	"image"
 	"log"
 	"math"
-	"mrclean/message"
 	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
+	"github.com/folago/mrclean"
 	"github.com/gorilla/websocket"
 )
 
@@ -135,7 +135,7 @@ type Visual struct {
 	PicGeometry  []float64 `json:"pic_geometry,omitempty"`
 	URL          string    `json:"pic_url,omitempty"`
 	//rect             Rectangle `json:"-"`
-	message.MetaData `json:"-"`
+	mrclean.MetaData `json:"-"`
 }
 
 //Rect returns an image.Ractangle
@@ -389,8 +389,8 @@ func NewPicVisual(name, description, url string, size []float64) *Visual {
 //}
 
 func NetListen() (chan interface{}, error) {
-	log.Printf("attempting to listen to %v\n", message.LB)
-	conn, err := net.ListenUDP("udp4", message.LB)
+	log.Printf("attempting to listen to %v\n", mrclean.LB)
+	conn, err := net.ListenUDP("udp4", mrclean.LB)
 	//conn, err := net.ListenMulticastUDP("udp4", nil, message.Mcast)
 	//conn, err := message.JoinMcast(message.Mcast.IP)
 	if err != nil {
@@ -446,7 +446,7 @@ func NetListen() (chan interface{}, error) {
 			//}
 			//log.Printf("decoding %v\n", msg)
 			//i := &message.ImageData{} //&ecs.Message{}
-			i := &message.InMessage{} //&ecs.Message{}
+			i := &mrclean.InMessage{} //&ecs.Message{}
 			n, err := conn.Read(buff)
 			if err != nil {
 				log.Fatal(err)
@@ -458,16 +458,16 @@ func NetListen() (chan interface{}, error) {
 				continue
 			}
 			switch i.Header {
-			case message.ImageMsg:
-				img := &message.ImageData{}
+			case mrclean.ImageMsg:
+				img := &mrclean.ImageData{}
 				err = json.Unmarshal(i.Content, img)
 				if err != nil {
 					log.Println(err)
 					continue
 				}
 				ch <- *img
-			case message.SortMsg:
-				srt := &message.SortData{}
+			case mrclean.SortMsg:
+				srt := &mrclean.SortData{}
 				err = json.Unmarshal(i.Content, srt)
 				if err != nil {
 					log.Println(err)
@@ -629,7 +629,7 @@ func Loop(in chan interface{}, rpc chan RpcRes, ws *websocket.Conn) {
 		msgin := <-in
 		log.Println("RECV: ", msgin)
 		switch msgin := msgin.(type) {
-		case message.ImageData:
+		case mrclean.ImageData:
 			// NewPicVisual(name, description, url string, size []float64)
 			size := []float64{float64(msgin.Size[0]), float64(msgin.Size[1])}
 			vis := NewPicVisual(msgin.Name, msgin.MetaData.String(), msgin.URL, size)
@@ -701,7 +701,7 @@ func Loop(in chan interface{}, rpc chan RpcRes, ws *websocket.Conn) {
 			vismap[vis.Name] = vis
 			log.Printf("%+v\n", vismap)
 			//pendingVis[req.ID] = req
-		case message.SortData:
+		case mrclean.SortData:
 			log.Println("Sorting...")
 			vislist, err := FilterVisuals("mrc_", ws, rpc)
 			if err != nil {
@@ -738,7 +738,6 @@ func Loop(in chan interface{}, rpc chan RpcRes, ws *websocket.Conn) {
 				}
 			}
 			log.Println("...done.")
-
 		}
 	}
 }

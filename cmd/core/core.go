@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/folago/mrclean"
@@ -29,6 +30,8 @@ var (
 	configfile string
 	//config is map of configuration options
 	config map[string]string
+	//netconn is the transport protocol for the connection
+	netconn string
 )
 
 func init() {
@@ -39,6 +42,7 @@ func init() {
 		"rpcserver", mrclean.CoreAddr, "IP:PORT of the rpc server, defaults to localhost:32123")
 	flag.StringVar(&configfile,
 		"configfile", "config.json", "Configuration file for Mr. Clean")
+	flag.StringVar(&netconn, "net", "tcp", "Specifies the connection protocol: tcp, udp, unix etc..")
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
@@ -51,7 +55,7 @@ func main() {
 	}
 	core := &Core{Visuals: make(map[string]*mrclean.Visual)}
 	go srunService(core)
-	client, err = jsonrpc.Dial("tcp", displayrpc)
+	client, err = jsonrpc.Dial(netconn, displayrpc)
 	if err != nil {
 		log.Fatal("dialing:", err)
 	}
@@ -65,6 +69,7 @@ func main() {
 	}
 	core.DispW = reply[0]
 	core.DispH = reply[1]
+	log.Printf("core.DispW: %f, core.DispH: %f\n", core.DispW, core.DispH)
 
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGINT)
@@ -75,33 +80,45 @@ func main() {
 type Core struct {
 	Visuals      map[string]*mrclean.Visual
 	DispW, DispH float64
+	Lock         sync.Mutex
 }
 
-//AddVisual adds a visual received fomr the chronicle
+//AddVisual adds a visual received from the chronicle
 func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
-	c.Visuals[vis.Name] = vis
+	c.Lock.Lock()
+	defer c.Lock.Unlock()
+	//c.Visuals[vis.Name] = vis
 	*reply = 0
-	log.Printf("Added visual %+v\n", vis)
-	log.Println("len(Viausls) ", len(c.Visuals))
+	log.Printf("Received visual %+v\n", vis)
 	//adding visual to the display
-	var rvis *mrclean.Visual
-	err := client.Call("Core.AddVisual", *vis, rvis)
-	if err != nil {
-		return err
+	rvis := &mrclean.Visual{
+		Origin: make([]float64, 2),
+		Size:   make([]float64, 2),
 	}
-	//the rpc result has all the data so we pu that in the map
+	err := client.Call("Display.AddVisual", vis, rvis)
+	if err != nil {
+		log.Println(err)
+		//maye just return nil? chronicle cannot do much a this point
+		//return err
+	}
+	//the rpc result has all the data so we put that in the map
 	c.Visuals[rvis.Name] = rvis
+	log.Printf("Added visual %+v\n", rvis)
+	log.Println("len(Visuals) ", len(c.Visuals))
 	return nil
 }
 
 //Sort handle the gestures received from ths users to sprt the visuals
 func (c *Core) Sort(layersorder string, reply *int) error {
+	c.Lock.Lock()
+	defer c.Lock.Unlock()
 	layersconf := config["layers"]
 	layers := strings.Split(layersconf, "/")
 	order := strings.Split(layersorder, "/")
 	//chek we are doing things correctly
 	if len(layers) != len(order) {
 		log.Println("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
+		*reply = -1
 		return fmt.Errorf("sorting layers number differs from configuraion")
 	}
 	// we get the map of the position of each layer in
@@ -114,7 +131,8 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	for _, s := range layers {
 		_, ok := ordermap[s]
 		if !ok {
-			log.Println("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
+			log.Printf("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
+			*reply = -1
 			return fmt.Errorf("sorting layers elements differ from configuraion")
 		}
 	}
@@ -126,21 +144,26 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	var dx, dy float64
 
 	//get the visuals in an array with the correct meta-data
-	visuals := make([]mrclean.Visual, len(c.Visuals), 0)
+	visuals := make([]mrclean.Visual, 0, len(c.Visuals))
 	for _, v := range c.Visuals {
 		//strings for metadata
 		metastrings := make([]string, len(layers))
 		// layers in the name
 		sn := strings.Split(v.Name, string(os.PathSeparator))
+		if len(sn) != len(metastrings) {
+			log.Printf("WARNING: metadata and path of images are of different length, path is %d and shuld be %d\n",
+				len(sn), len(metastrings))
+		}
 		//name layer map
 		//nlm := make(map[string]int, len(layers))
 		//for i, s := range sn {
 		//	nlm[s] = i
 		//}
-
+		log.Printf(" len(sn) = %d len(metastrings) = %d", len(sn), len(metastrings))
 		//assemble meta-data swapping position
 		//according to the swap map
 		for l, o := range swap {
+			log.Printf("swapping metastrings[%v] = sn[%v]\n", o, l)
 			metastrings[o] = sn[l]
 		}
 		v.Meta = strings.Join(metastrings, "/")
@@ -150,6 +173,7 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		dx = math.Max(dx, v.Size[0])
 		dy = math.Max(dy, v.Size[1])
 	}
+	log.Printf("sorting: len(visuals) = %v\n", len(visuals))
 	//SORT
 	By(metaf).Sort(visuals)
 	//loop to put the visuals on screen
@@ -157,16 +181,19 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	dx += 0.05 //5 cm
 	dy += 0.05 //5 cm
 	var (
-		lastpx, lastpy float64
-		origins        mrclean.VisualOrigins
-		row            float64
+		lastpx                         = -c.DispW*0.5 + dx*0.5
+		lastpy                         = c.DispH*0.5 - dy*0.5
+		origins *mrclean.VisualOrigins = mrclean.NewVisualOrigins()
+		row     float64
 	)
-	for _, v := range c.Visuals {
-		v.Origin[0], v.Origin[1] = lastpx, lastpy
+	log.Printf("dx: %f, dy: %f\n", dx, dy)
+	for i := range visuals {
+		visuals[i].Origin[0], visuals[i].Origin[1] = lastpx, lastpy
+		log.Println("Origin: ", visuals[i].Origin)
 		//fmt.Println("before: ", v.rect, v.rect.Center())
 		//fmt.Println("after: ", v.rect, v.rect.Center())
-		origins.Vids = append(origins.Vids, v.ID)
-		origins.Origins = append(origins.Origins, v.Origin)
+		origins.Vids = append(origins.Vids, visuals[i].ID)
+		origins.Origins = append(origins.Origins, visuals[i].Origin)
 		//HERE rpc
 		lastpx += dx
 		if lastpx+dx*0.5 > c.DispW {
@@ -176,17 +203,25 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		}
 	}
 	//CALL
-	var repl int
+	var repl int = 0
+	log.Printf("calling Display.SetVisualsOrigin %v\n", origins)
 	err := client.Call("Display.SetVisualsOrigin", origins, &repl)
 	if err != nil {
+		*reply = -1
+		log.Println("Display error setting Visuals orgin: ", err)
 		return err
-		//log.Println("Display error setting Visuals orgin: ", err)
+	}
+	if repl == 0 {
+		reply = &repl
+	} else {
+		log.Println("Something happened during Display.SetVisualsOrigin ", repl)
+		*reply = -1
 	}
 
 	return nil
 }
 
-//runs the given object as an RPC service using JSON as encoding
+//runs the given struct as an RPC service using JSON as encoding
 func srunService(core *Core) {
 	rpc.Register(core)
 	l, e := net.Listen("tcp", rpcserver)
