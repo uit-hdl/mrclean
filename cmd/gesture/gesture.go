@@ -6,20 +6,18 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"math/rand"
-	"runtime"
-
-	"leap"
 	"log"
-
+	"math/rand"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"os"
 	"os/signal"
+	"runtime"
 	"strings"
 	"syscall"
 
 	"github.com/UniversityofTromso/mrclean"
+	"github.com/folago/leap"
 )
 
 var (
