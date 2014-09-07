@@ -121,7 +121,7 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	order := strings.Split(layersorder, "/")
 	//chek we are doing things correctly
 	if len(layers) != len(order) {
-		log.Println("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
+		log.Printf("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
 		*reply = -1
 		return fmt.Errorf("sorting layers number differs from configuraion")
 	}
