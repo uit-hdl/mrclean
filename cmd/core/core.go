@@ -186,12 +186,13 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	dx += 0.05 //5 cm
 	dy += 0.05 //5 cm
 	var (
+		row     float64                = 1.0
 		lastpx                         = -c.DispW*0.5 + dx*0.5
-		lastpy                         = c.DispH*0.5 - dy*0.5
+		lastpy                         = c.DispH*0.5 - dy*0.5*row
 		origins *mrclean.VisualOrigins = mrclean.NewVisualOrigins()
-		row     float64
 	)
 	log.Printf("dx: %f, dy: %f\n", dx, dy)
+	log.Printf(" lastpx: %f lastpy: %f \n", lastpx, lastpy)
 	for i := range visuals {
 		visuals[i].Origin[0], visuals[i].Origin[1] = lastpx, lastpy
 		log.Println("Origin: ", visuals[i].Origin)
@@ -199,13 +200,15 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		//fmt.Println("after: ", v.rect, v.rect.Center())
 		origins.Vids = append(origins.Vids, visuals[i].ID)
 		origins.Origins = append(origins.Origins, visuals[i].Origin)
-		//HERE rpc
 		lastpx += dx
-		if lastpx+dx*0.5 > c.DispW {
-			lastpx = c.DispW + dx*0.5
+		log.Printf(" lastpx+dx: %f c.DispW*0.5: %f \n", lastpx+dx, c.DispW*0.5)
+		if lastpx+dx > c.DispW*0.5 {
+			lastpx = -c.DispW*0.5 + dx*0.5
 			row += 1
-			lastpy = c.DispH - row*dy
+			lastpy = c.DispH*0.5 - dy*row //c.DispH - row*dy
+			log.Printf("New ROW: %f ", row)
 		}
+		log.Printf(" lastpx: %f lastpy: %f \n", lastpx, lastpy)
 	}
 	//CALL
 	var repl int = 0
