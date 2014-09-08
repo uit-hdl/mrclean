@@ -16,6 +16,8 @@ import (
 	"strings"
 	"syscall"
 
+	glm "github.com/folago/googlmath"
+
 	"github.com/UniversityofTromso/mrclean"
 	"github.com/folago/leap"
 )
@@ -126,7 +128,28 @@ func LeapSend() {
 		for _, g := range gl {
 			switch g.Type {
 			case "circle":
-				log.Printf("id: %d, type: %s progress: %f \n", g.ID, g.Type, g.Progress)
+				x := g.Normal.Dot(glm.Vector3{0, 0, -1})
+				var clockwise bool
+				layers := strings.Split(config["layers"], "/")
+				if x >= 0 {
+					clockwise = true
+					shift(layers, clockwise)
+
+				} else {
+					shift(layers, clockwise)
+				}
+				sort := strings.Join(layers, "/")
+				fmt.Println("SEND :", sort)
+				var ret int
+				err := client.Call("Core.Sort", sort, &ret)
+				if err != nil {
+					log.Println(err)
+				}
+				if ret == -1 {
+					log.Printf("something wrong in the sorting")
+				}
+				config["layers"] = sort
+				log.Printf("id: %d, type: %s progress: %f clockwise: %v \n", g.ID, g.Type, g.Progress, clockwise)
 			case "swipe":
 				log.Printf("id: %d, type: %s speed: %f \n", g.ID, g.Type, g.Speed)
 				layers := strings.Split(config["layers"], "/")
@@ -168,7 +191,7 @@ func LeapSend() {
 func GestureSender(ch chan []leap.Gesture, ld *leap.Device) {
 	//gmap := make(map[int]leap.Gesture)
 	for frame := range ld.Frames {
-		fmt.Printf("%+v\n", frame.Timestamp)
+		//fmt.Printf("%+v\n", frame.Timestamp)
 
 		if len(frame.Gestures) == 0 {
 			//fmt.Printf("No gestures\n")
@@ -191,6 +214,7 @@ func GestureSender(ch chan []leap.Gesture, ld *leap.Device) {
 	//ch <- ecs.InputMessage{HandMove: handmove}
 }
 
+//shuffles the metadate randomly
 func shuffle(slice []string) { //[]string {
 	if slice == nil {
 		return //slice
@@ -200,6 +224,28 @@ func shuffle(slice []string) { //[]string {
 		slice[i], slice[j] = slice[j], slice[i]
 	}
 	return //slice
+}
+
+//shift the metadata order and wraps around
+func shift(slice []string, left bool) { // []string {
+	if slice == nil {
+		return //slice
+	}
+	temp := make([]string, len(slice))
+	copy(temp, slice)
+	if left {
+		for i, v := range temp[1:] {
+			slice[i] = v
+		}
+		slice[len(slice)-1] = temp[0]
+	}
+	if !left {
+		for i, v := range temp[:len(slice)-1] {
+			slice[i+1] = v
+		}
+		slice[0] = temp[len(slice)-1]
+	}
+	return
 }
 
 func Map(ch chan leap.Gesture) chan leap.Gesture {
