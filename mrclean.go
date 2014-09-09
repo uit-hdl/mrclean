@@ -219,7 +219,7 @@ type Visual struct {
 	//commit number
 	Commit string
 	//Metadata associated with the visual
-	Meta string
+	Meta []string
 	//Origin is the handle to move teh Visual
 	Origin []float64 //`json:"omitempty"`
 	//Size represent the size on screen

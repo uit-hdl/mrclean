@@ -81,6 +81,8 @@ type Core struct {
 	Visuals      map[string]*mrclean.Visual
 	DispW, DispH float64
 	Lock         sync.Mutex
+	// max width and height of the visuals
+	mx, my float64
 }
 
 //AddVisual adds a visual received from the chronicle
@@ -109,16 +111,21 @@ func (c *Core) AddVisual(vis *mrclean.Visual, reply *int) error {
 	c.Visuals[vis.Name] = vis
 	log.Printf("Added visual %+v\n", vis)
 	log.Println("len(Visuals) ", len(c.Visuals))
+	c.mx = math.Max(c.mx, vis.Size[0])
+	c.my = math.Max(c.my, rvis.Size[1])
 	return nil
 }
 
-//Sort handle the gestures received from ths users to sprt the visuals
+//Sort handle the gestures received from ths users to sort the visuals
 func (c *Core) Sort(layersorder string, reply *int) error {
 	c.Lock.Lock()
 	defer c.Lock.Unlock()
+	//get the the metadata
 	layersconf := config["layers"]
-	layers := strings.Split(layersconf, "/")
-	order := strings.Split(layersorder, "/")
+	//split metdata in to layers
+	layers := strings.Split(layersconf, string(os.PathSeparator))
+	//split requested layer order
+	order := strings.Split(layersorder, string(os.PathSeparator))
 	//chek we are doing things correctly
 	if len(layers) != len(order) {
 		log.Printf("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
@@ -145,7 +152,12 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	for i, l := range layers {
 		swap[i] = ordermap[l]
 	}
-	var dx, dy float64
+
+	//	var (
+	//		// maximum sixe of the images, basically the imeges will be in a grid
+	//		// the grid size is the size of teh biggest image plus 5cm, see later
+	//		dx, dy float64
+	//	)
 
 	//get the visuals in an array with the correct meta-data
 	visuals := make([]mrclean.Visual, 0, len(c.Visuals))
@@ -153,7 +165,7 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		//strings for metadata
 		metastrings := make([]string, len(layers))
 		// layers in the name
-		log.Printf("splitting for metadata: %s", v.Name)
+		//log.Printf("splitting for metadata: %s", v.Name)
 		sn := strings.Split(v.Name, string(os.PathSeparator))
 		if len(sn) != len(metastrings) {
 			log.Printf("WARNING: metadata and path of images are of different length, path is %d and shuld be %d\n",
@@ -171,12 +183,13 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 			log.Printf("swapping metastrings[%v] = sn[%v]\n", o, l)
 			metastrings[o] = sn[l]
 		}
-		v.Meta = strings.Join(metastrings, "/")
+		//v.Meta = strings.Join(metastrings, "/")
+		v.Meta = metastrings
 		visuals = append(visuals, *v)
 		//get the bigger visual to use as placeholder
 		//for the displaying
-		dx = math.Max(dx, v.Size[0])
-		dy = math.Max(dy, v.Size[1])
+		//dx = math.Max(dx, v.Size[0])
+		//dy = math.Max(dy, v.Size[1])
 	}
 	log.Printf("sorting: len(visuals) = %v\n", len(visuals))
 	//SORT
@@ -191,32 +204,32 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		lastpy                         = c.DispH*0.5 - dy*0.5*row
 		origins *mrclean.VisualOrigins = mrclean.NewVisualOrigins()
 	)
-	log.Printf("dx: %f, dy: %f\n", dx, dy)
-	log.Printf(" lastpx: %f lastpy: %f \n", lastpx, lastpy)
+	//log.Printf("dx: %f, dy: %f\n", dx, dy)
+	//log.Printf(" lastpx: %f lastpy: %f \n", lastpx, lastpy)
 	for i := range visuals {
 		visuals[i].Origin[0], visuals[i].Origin[1] = lastpx, lastpy
-		log.Println("Origin: ", visuals[i].Origin)
+		//log.Println("Origin: ", visuals[i].Origin)
 		//fmt.Println("before: ", v.rect, v.rect.Center())
 		//fmt.Println("after: ", v.rect, v.rect.Center())
 		origins.Vids = append(origins.Vids, visuals[i].ID)
 		origins.Origins = append(origins.Origins, visuals[i].Origin)
 		lastpx += dx
-		log.Printf(" lastpx+dx: %f c.DispW*0.5: %f \n", lastpx+dx, c.DispW*0.5)
+		//log.Printf(" lastpx+dx: %f c.DispW*0.5: %f \n", lastpx+dx, c.DispW*0.5)
 		if lastpx+dx > c.DispW*0.5 {
 			lastpx = -c.DispW*0.5 + dx*0.5
 			row += 1
-			lastpy = c.DispH*0.5 - dy*row //c.DispH - row*dy
-			log.Printf("New ROW: %f ", row)
+			lastpy -= dy //c.DispH*0.5 - dy*row //c.DispH - row*dy
+			//log.Printf("New ROW: %f ", row)
 		}
-		log.Printf(" lastpx: %f lastpy: %f \n", lastpx, lastpy)
+		//log.Printf(" lastpx: %f lastpy: %f \n", lastpx, lastpy)
 	}
 	//CALL
 	var repl int = 0
-	log.Printf("calling Display.SetVisualsOrigin %v\n", origins)
+	//log.Printf("calling Display.SetVisualsOrigin %v\n", origins)
 	err := client.Call("Display.SetVisualsOrigin", origins, &repl)
 	if err != nil {
 		*reply = -1
-		log.Println("Display error setting Visuals orgin: ", err)
+		//log.Println("Display error setting Visuals orgin: ", err)
 		return err
 	}
 	if repl == 0 {
@@ -227,6 +240,84 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	}
 
 	return nil
+}
+
+func (c *Core) Group(layer string, reply *int) error {
+	return nil
+}
+
+func (c *Core) updatemetadata(layers string) error {
+	//get the the metadata
+	layersconf := config["layers"]
+	//split metdata in to layers
+	layers := strings.Split(layersconf, string(os.PathSeparator))
+	//split requested layer order
+	order := strings.Split(layersorder, string(os.PathSeparator))
+	//chek we are doing things correctly
+	if len(layers) != len(order) {
+		log.Printf("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
+		*reply = -1
+		return fmt.Errorf("sorting layers number differs from configuraion")
+	}
+	// we get the map of the position of each layer in
+	// the sorting order
+	ordermap := make(map[string]int, len(layers))
+	for i, s := range order {
+		ordermap[s] = i
+	}
+	//now check we don't have wrong layers
+	for _, s := range layers {
+		_, ok := ordermap[s]
+		if !ok {
+			log.Printf("order layer and configured layer mismatch:\n%+v\n%+v\n", order, layers)
+			*reply = -1
+			return fmt.Errorf("sorting layers elements differ from configuraion")
+		}
+	}
+	//maps layer position to order position
+	swap := make(map[int]int, len(layers))
+	for i, l := range layers {
+		swap[i] = ordermap[l]
+	}
+
+	//	var (
+	//		// maximum sixe of the images, basically the imeges will be in a grid
+	//		// the grid size is the size of teh biggest image plus 5cm, see later
+	//		dx, dy float64
+	//	)
+
+	//get the visuals in an array with the correct meta-data
+	visuals := make([]mrclean.Visual, 0, len(c.Visuals))
+	for _, v := range c.Visuals {
+		//strings for metadata
+		metastrings := make([]string, len(layers))
+		// layers in the name
+		//log.Printf("splitting for metadata: %s", v.Name)
+		sn := strings.Split(v.Name, string(os.PathSeparator))
+		if len(sn) != len(metastrings) {
+			log.Printf("WARNING: metadata and path of images are of different length, path is %d and shuld be %d\n",
+				len(sn), len(metastrings))
+		}
+		//name layer map
+		//nlm := make(map[string]int, len(layers))
+		//for i, s := range sn {
+		//	nlm[s] = i
+		//}
+		log.Printf(" len(sn) = %d len(metastrings) = %d", len(sn), len(metastrings))
+		//assemble meta-data swapping position
+		//according to the swap map
+		for l, o := range swap {
+			log.Printf("swapping metastrings[%v] = sn[%v]\n", o, l)
+			metastrings[o] = sn[l]
+		}
+		//v.Meta = strings.Join(metastrings, "/")
+		v.Meta = metastrings
+		visuals = append(visuals, *v)
+		//get the bigger visual to use as placeholder
+		//for the displaying
+		//dx = math.Max(dx, v.Size[0])
+		//dy = math.Max(dy, v.Size[1])
+	}
 }
 
 //runs the given struct as an RPC service using JSON as encoding

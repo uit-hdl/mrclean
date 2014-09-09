@@ -1,7 +1,9 @@
 package main
 
 import (
+	"os"
 	"sort"
+	"strings"
 
 	"github.com/UniversityofTromso/mrclean"
 )
@@ -61,7 +63,7 @@ var (
 		return v1.URL < v2.URL
 	}
 	metaf = func(v1, v2 *mrclean.Visual) bool {
-		return v1.Meta < v2.Meta
+		return strings.Join(v1.Meta, string(os.PathSeparator)) < strings.Join(v2.Meta, string(os.PathSeparator))
 	}
 )
 
