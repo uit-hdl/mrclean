@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"gui/we"
 	"image"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
 	"strings"
 
 	"code.google.com/p/go.net/ipv4"
@@ -224,4 +226,22 @@ type Visual struct {
 	Origin []float64 //`json:"omitempty"`
 	//Size represent the size on screen
 	Size []float64 //`json:"omitempty"`
+}
+
+func ReadConfig(fname string) (map[string]string, error) {
+	file, err := os.Open(fname)
+	if err != nil {
+		return nil, err
+	}
+	buff, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	var config map[string]string
+	err = json.Unmarshal(buff, &config)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Got configuration: %+v\n", config)
+	return config, nil
 }

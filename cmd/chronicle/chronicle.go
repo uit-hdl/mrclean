@@ -25,6 +25,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"syscall"
 	"time"
 
@@ -52,11 +53,19 @@ var (
 	corerpc string
 	//netconn is the transport protocol for the connection
 	netconn string
+	//config is map of configuration options
+	config     map[string]string
+	configfile string
+	layers     int
+
+	imgbacklog []string
 
 	client  *rpc.Client
 	watcher *fsnotify.Watcher
 	git     bool
 	err     error
+
+	reImg *regexp.Regexp
 )
 
 func init() {
@@ -70,8 +79,12 @@ func init() {
 		"IP:PORT of the rpc server, defaults to localhost:32124")
 	flag.StringVar(&watch, "watch", "./watch",
 		"Specifies the path to watch, default to ./watch")
+	flag.StringVar(&configfile,
+		"configfile", "config.json", "Configuration file for Mr. Clean")
+
 	flag.StringVar(&netconn, "net", "tcp", "Specifies the connection protocol: tcp, udp, unix etc..")
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	reImg = regexp.MustCompile(`\.(PNG|png|JPEG|JPG|jpeg|jpg)$`)
 }
 
 func main() {
@@ -95,6 +108,12 @@ func main() {
 	if err == nil {
 		git = true
 	}
+	config, err = mrclean.ReadConfig("config.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	//numebr of layers of the configuration
+	layers = len(strings.Split(config["layers"], string(os.PathSeparator)))
 	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
@@ -106,13 +125,6 @@ func main() {
 	}
 	log.Println("ip: ", nip)
 	ip = nip.String()
-	//walk the file path for watching
-	err = filepath.Walk(watch, WatchWalk)
-	if err != nil {
-		log.Println(err)
-	}
-	//actually qwatch teh path
-	go ListenWatcher(client)
 	//start the http server
 	//is messy i know
 	go func() {
@@ -122,6 +134,23 @@ func main() {
 				http.FileServer(http.Dir(watch)))) //)
 	}()
 
+	//walk the file path for watching
+	err = filepath.Walk(watch, WatchWalkImgs)
+	if err != nil {
+		log.Println(err)
+	}
+	//actually watch teh path
+	go ListenWatcher(client)
+	//now we fees the images found wile walking the
+	//watch dir into fs event handler
+	for _, img := range imgbacklog {
+		e := fsnotify.Event{
+			Name: img,
+			Op:   fsnotify.Write,
+		}
+		watcher.Events <- e
+
+	}
 	//wait for CTRL-C
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT)
@@ -194,7 +223,6 @@ func GitInit() error {
 
 //the filepath.WalkFunc to walk the watched folders
 func WatchWalk(path string, info os.FileInfo, err error) error {
-	//log.Println(path, info.IsDir())
 	if err != nil {
 		return err
 	}
@@ -203,6 +231,35 @@ func WatchWalk(path string, info os.FileInfo, err error) error {
 		err = watcher.Add(path)
 		if err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+//the filepath.WalkFunc to walk the watched folders
+//in addition it sends visuals to the core if it finds some in the dirs
+func WatchWalkImgs(path string, info os.FileInfo, err error) error {
+	log.Println(path) //, info.IsDir())
+	if err != nil {
+		return err
+	}
+	switch {
+	case info.IsDir():
+		//err = watcher.WatchFlags(path, fsnotify.FSN_MODIFY|fsnotify.FSN_CREATE)
+		err = watcher.Add(path)
+		if err != nil {
+			return err
+		}
+	case reImg.MatchString(path):
+		relpath, err := filepath.Rel(watch, path)
+		if err != nil {
+			log.Fatal("Path to 'watch' mismatched: ", err)
+		}
+		//check if the img has the same numeber of layers
+		//as the config, if it has we put its name in a buffer and later feed it
+		//to the fs event handler
+		if layers == len(strings.Split(relpath, string(os.PathSeparator))) {
+			imgbacklog = append(imgbacklog, path)
 		}
 	}
 	return nil
@@ -220,7 +277,7 @@ func WatchWalk(path string, info os.FileInfo, err error) error {
 // save vim: RENAME, CREATE, CHMOD
 // append: WRITE, CHMOD
 func ListenWatcher(core *rpc.Client) {
-	reImg := regexp.MustCompile(`\.(PNG|png|JPEG|JPG|jpeg|jpg)$`)
+	//reImg := regexp.MustCompile(`\.(PNG|png|JPEG|JPG|jpeg|jpg)$`)
 	reScr := regexp.MustCompile(`\.(r|R)$`)
 	hidden := regexp.MustCompile(`^\. | /\.`)
 	// this is the bit mask to filter image file events. We use
