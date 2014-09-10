@@ -154,10 +154,12 @@ func LeapSend() {
 				log.Printf("id: %d, type: %s speed: %f \n", g.ID, g.Type, g.Speed)
 				layers := strings.Split(config["layers"], "/")
 				shuffle(layers)
-				sort := strings.Join(layers, "/")
-				fmt.Println("SEND :", sort)
+				group := strings.Join(layers, "/")
+				fmt.Println("SEND :", group)
+				//group := layers[rand.Intn(len(layers))]
+				//fmt.Println("SEND :", group)
 				var ret int
-				err := client.Call("Core.Sort", sort, &ret)
+				err := client.Call("Core.Group", group, &ret)
 				if err != nil {
 					log.Println(err)
 				}
