@@ -11,53 +11,65 @@ import (
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	//display
 	display := exec.Command("display")
 	//get stdout
 	stdoutd, err := display.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)
 	}
+	//go io.Copy(os.Stdout, stdoutd)
 
+	//core
 	core := exec.Command("core")
 	stdoutc, err := core.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)
 	}
+	//go io.Copy(os.Stdout, stdoutc)
 
+	//chronicle
 	chronicle := exec.Command("chronicle")
 	stdoutcr, err := chronicle.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)
 	}
+	//go io.Copy(os.Stdout, stdoutcr)
+
+	//Write combined stdout of the comands
+	go io.Copy(os.Stdout, io.MultiReader(stdoutd, stdoutc, stdoutcr))
 
 	//map containing the commands and their pth as keys
 	cmdm := make(map[string]*exec.Cmd)
+
 	//start the commands and puththem in the map
 	err = display.Start()
 	if err != nil {
 		log.Fatalf("Start error %+v\n", err)
 	}
-	//this is gross but it needs some tiem to connect...
-	time.Sleep(1 * time.Second)
-	//copy stdout of child process to stdout
-	go io.Copy(os.Stdout, stdoutd)
 	cmdm[display.Path] = display
+	//this is gross and wrong but it needs some time to connect...
+	time.Sleep(1 * time.Second)
+
 	err = core.Start()
 	if err != nil {
 		display.Process.Kill()
 		log.Fatalf("%+v\n", err)
 	}
-	go io.Copy(os.Stdout, stdoutc)
 	cmdm[core.Path] = core
+	//this is gross and wrong but it needs some time to connect...
+	time.Sleep(1 * time.Second)
+
 	err = chronicle.Start()
 	if err != nil {
 		core.Process.Kill()
 		display.Process.Kill()
 		log.Fatalf("%+v\n", err)
 	}
-	go io.Copy(os.Stdout, stdoutcr)
-
 	cmdm[chronicle.Path] = chronicle
+	//this is gross and wrong but it needs some time to connect...
+	time.Sleep(1 * time.Second)
+
 	//all running we wait for deaths
 	//upon a death we remove the dead command fomr the map
 	//and kill the others to clean up
