@@ -37,7 +37,8 @@ var (
 	//period of polling
 	//T time.Duration = 16 * time.Millisecond
 	//channel for gestures fomr leapmotion
-	out chan []leap.Gesture
+	//out chan []leap.Gesture
+	out chan leap.Gesture
 )
 
 func init() {
@@ -113,7 +114,8 @@ func StdInput() {
 }
 
 func LeapSend() {
-	out = make(chan []leap.Gesture, 10)
+	out = make(chan leap.Gesture, 20)
+	//out = make(chan []leap.Gesture, 10)
 	//leap motion setup
 	ldev, err := leap.Dial(leap.WSURL)
 	//log.Println(err, ldev)
@@ -122,108 +124,122 @@ func LeapSend() {
 	}
 	ldev.GestEnable(true)
 	go GestureSender(out, ldev)
-	var oldG time.Time
-	newG := time.Now()
-	for gl := range out {
-		//fmt.Printf("id: %d, type: %s frames: %d ", gl[0].ID, gl[0].Type, len(gl))
-		//dur := gl[0].Duration
-		for _, g := range gl {
-			//throttle a bit
-			delta := newG.Sub(oldG)
-			if delta.Seconds() < 1.5 {
-				log.Printf("continue delta %v\n", delta)
-				oldG = newG
-				continue
-			}
-			oldG = newG
-			log.Printf("oldG %v delta %v\n", oldG, delta)
-			switch g.Type {
-			case "circle":
-				x := g.Normal.Dot(glm.Vector3{0, 0, -1})
-				var clockwise bool
-				layers := strings.Split(config["layers"], "/")
-				if x >= 0 {
-					clockwise = true
-					shift(layers, clockwise)
 
-				} else {
-					shift(layers, clockwise)
-				}
-				sort := strings.Join(layers, "/")
-				fmt.Println("SEND :", sort)
-				var ret int
-				err := client.Call("Core.Sort", sort, &ret)
-				if err != nil {
-					log.Println(err)
-				}
-				if ret == -1 {
-					log.Printf("something wrong in the sorting")
-				}
-				config["layers"] = sort
-				log.Printf("id: %d, type: %s progress: %f clockwise: %v \n", g.ID, g.Type, g.Progress, clockwise)
-			case "swipe":
-				log.Printf("id: %d, type: %s speed: %f \n", g.ID, g.Type, g.Speed)
-				layers := strings.Split(config["layers"], "/")
-				shuffle(layers)
-				group := strings.Join(layers, "/")
-				fmt.Println("SEND :", group)
-				//group := layers[rand.Intn(len(layers))]
-				//fmt.Println("SEND :", group)
-				var ret int
-				err := client.Call("Core.Group", group, &ret)
-				if err != nil {
-					log.Println(err)
-				}
-				if ret == -1 {
-					log.Printf("something wrong in the sorting")
-				}
-				//on one event
-				continue
-			case "screenTap":
-				log.Printf("id: %d, type: %s\n", g.ID, g.Type)
-			case "keyTap":
-				log.Printf("id: %d, type: %s\n", g.ID, g.Type)
-			}
-			//dur += g.Duration
-			//if g.Type == "circle" {
-			//	fmt.Printf("%v", g.Normal)
-			//}
+	var (
+		oldG time.Time
+		newG time.Time // = time.Now()
+	)
+	//for gl := range out {
+	//fmt.Printf("id: %d, type: %s frames: %d ", gl[0].ID, gl[0].Type, len(gl))
+	//dur := gl[0].Duration
+	for g := range out {
+		//throttle a bit
+		newG = time.Now()
+		delta := newG.Sub(oldG)
+		if delta.Seconds() < 1.5 {
+			log.Printf("continue delta %v\n", delta)
+			oldG = newG
+			continue
 		}
-		//fmt.Printf("duration: %v\n", dur)
-		//str := fmt.Sprintf("id: %d, state: %s type: %s", gl[0].ID, gl[0].State gl[0].Type)
-		//buff := bytes.NewBufferString(str)
-		//for _, g := range gl[1:] {
-		//	_, err := buff.WriteString(fmt.Sprintf("id: %d, state: %s ", g.ID, g.State))
-		//	if err != nil {
-		//		log.Fatal(err)
-		//	}
+		log.Printf("oldG %v delta %v\n", oldG, delta)
+		switch g.Type {
+		case "circle":
+			x := g.Normal.Dot(glm.Vector3{0, 0, -1})
+			var clockwise bool
+			layers := strings.Split(config["layers"], "/")
+			if x >= 0 {
+				clockwise = true
+				shift(layers, clockwise)
+
+			} else {
+				shift(layers, clockwise)
+			}
+			sort := strings.Join(layers, "/")
+			fmt.Println("SEND: Sort", sort)
+			var ret int
+			err := client.Call("Core.Sort", sort, &ret)
+			if err != nil {
+				log.Println(err)
+			}
+			if ret == -1 {
+				log.Printf("something wrong in the sorting")
+			}
+			config["layers"] = sort
+			log.Printf("id: %d, type: %s progress: %f clockwise: %v \n", g.ID, g.Type, g.Progress, clockwise)
+		case "swipe":
+			right := false
+			if g.Direction.X > 0 {
+				right = true
+			}
+
+			log.Printf("id: %d, type: %s speed: %f \n", g.ID, g.Type, g.Speed)
+			layers := strings.Split(config["layers"], "/")
+			//shuffle(layers)
+			shift(layers, right)
+			group := strings.Join(layers, "/")
+			fmt.Println("SEND: Group", group)
+			config["layers"] = group
+			//group := layers[rand.Intn(len(layers))]
+			//fmt.Println("SEND :", group)
+			var ret int
+			err := client.Call("Core.Group", group, &ret)
+			if err != nil {
+				log.Println(err)
+			}
+			if ret == -1 {
+				log.Printf("something wrong in the sorting")
+			}
+			//on one event
+		case "screenTap":
+			log.Printf("id: %d, type: %s\n", g.ID, g.Type)
+		case "keyTap":
+			log.Printf("id: %d, type: %s\n", g.ID, g.Type)
+		}
+		//dur += g.Duration
+		//if g.Type == "circle" {
+		//	fmt.Printf("%v", g.Normal)
 		//}
-		//fmt.Printf("%s\n\n\n", buff)
+		oldG = newG
 	}
+	//fmt.Printf("duration: %v\n", dur)
+	//str := fmt.Sprintf("id: %d, state: %s type: %s", gl[0].ID, gl[0].State gl[0].Type)
+	//buff := bytes.NewBufferString(str)
+	//for _, g := range gl[1:] {
+	//	_, err := buff.WriteString(fmt.Sprintf("id: %d, state: %s ", g.ID, g.State))
+	//	if err != nil {
+	//		log.Fatal(err)
+	//	}
+	//}
+	//fmt.Printf("%s\n\n\n", buff)
+	//}
 }
 
 //TODO this is soooo ineficient so fix it eventually
-func GestureSender(ch chan []leap.Gesture, ld *leap.Device) {
+func GestureSender(ch chan leap.Gesture, ld *leap.Device) {
 	//gmap := make(map[int]leap.Gesture)
 	for frame := range ld.Frames {
 		//fmt.Printf("%+v\n", frame.Timestamp)
 
-		if len(frame.Gestures) == 0 {
-			//fmt.Printf("No gestures\n")
-			continue
-		}
-		var gslice []leap.Gesture
+		//if len(frame.Gestures) == 0 {
+		//	//fmt.Printf("No gestures\n")
+		//	continue
+		//}
+		//var gslice []leap.Gesture
 		//get a gest by id
 		for _, g := range frame.Gestures {
 			//fmt.Printf("%+v\n", g)
 			if g.State == "stop" {
-				gslice = append(gslice, g)
+				//tg := TimeGesture{
+				//	Gesture: g,
+				//	Time:    time.Now(),
+				//}
+				ch <- g //	gslice = append(gslice, g)
 			}
 			//fmt.Printf("%+v\n", g)
 		}
-		if len(gslice) > 0 {
-			ch <- gslice
-		}
+		//if len(gslice) > 0 {
+		//	ch <- gslice
+		//}
 	}
 	//log.Printf("%v  Radius %f\n", handmove, gest.SphereRadius)
 	//ch <- ecs.InputMessage{HandMove: handmove}
@@ -308,6 +324,11 @@ func Map(ch chan leap.Gesture) chan leap.Gesture {
 //		}
 //	}
 ////}
+
+type TimeGesture struct {
+	leap.Gesture
+	time.Time
+}
 
 //ok new stuff, the idea is to have a slice of channels to send the frame to
 //attached ot each channels thereis is  goroutine doing something and sending
