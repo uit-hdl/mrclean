@@ -136,7 +136,7 @@ func LeapSend() {
 		//throttle a bit
 		newG = time.Now()
 		delta := newG.Sub(oldG)
-		if delta.Seconds() < 1.5 {
+		if delta.Seconds() < 1.0 {
 			log.Printf("continue delta %v\n", delta)
 			oldG = newG
 			continue
@@ -190,6 +190,19 @@ func LeapSend() {
 				log.Printf("something wrong in the sorting")
 			}
 			//on one event
+		case "pan":
+			log.Println("pan: ", g.Direction)
+			var (
+				ret int
+				dir []float64 = []float64{float64(g.Direction.X), float64(g.Direction.Y)}
+			)
+			err := client.Call("Core.Pan", dir, &ret)
+			if err != nil {
+				log.Println(err)
+			}
+			if ret == -1 {
+				log.Printf("something wrong in the sorting")
+			}
 		case "screenTap":
 			log.Printf("id: %d, type: %s\n", g.ID, g.Type)
 		case "keyTap":
@@ -233,6 +246,9 @@ func GestureSender(ch chan leap.Gesture, ld *leap.Device) {
 				//	Gesture: g,
 				//	Time:    time.Now(),
 				//}
+				if len(frame.Hands) == 2 && g.Type == "swipe" {
+					g.Type = "pan"
+				}
 				ch <- g //	gslice = append(gslice, g)
 			}
 			//fmt.Printf("%+v\n", g)

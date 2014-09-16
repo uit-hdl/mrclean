@@ -147,6 +147,8 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	//log.Printf(" lastpx: %f lastpy: %f \n", lastpx, lastpy)
 	for i := range visuals {
 		visuals[i].Origin[0], visuals[i].Origin[1] = lastpx, lastpy
+		//keep track of the position locally
+		c.Visuals[visuals[i].Name].Origin = visuals[i].Origin
 		//log.Println("Origin: ", visuals[i].Origin)
 		//fmt.Println("before: ", v.rect, v.rect.Center())
 		//fmt.Println("after: ", v.rect, v.rect.Center())
@@ -177,6 +179,9 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 		log.Println("Something happened during Display.SetVisualsOrigin ", repl)
 		*reply = -1
 	}
+	//here we set the position of th evisuals locally
+	//for _, v := range visuals{
+	//	c.Visuals[v.Name]
 
 	return nil
 }
@@ -207,6 +212,8 @@ func (c *Core) Group(layer string, reply *int) error {
 		//put row by row on screen here
 		for _, v := range row {
 			v.Origin[0], v.Origin[1] = lastpx, lastpy
+			//keep track of the position locally
+			c.Visuals[v.Name].Origin = v.Origin
 			origins.Vids = append(origins.Vids, v.ID)
 			origins.Origins = append(origins.Origins, v.Origin)
 			lastpx += dx
@@ -232,6 +239,36 @@ func (c *Core) Group(layer string, reply *int) error {
 		*reply = -1
 	}
 
+	return nil
+}
+func (c *Core) Pan(dir []float64, reply *int) error {
+	c.Lock.Lock()
+	defer c.Lock.Unlock()
+	if len(dir) != 2 {
+		*reply = -1
+		return fmt.Errorf("Need a two dimansion vector to pan")
+	}
+	origins := mrclean.NewVisualOrigins()
+	for _, v := range c.Visuals {
+		v.Origin[0] += dir[0]
+		v.Origin[1] += dir[1]
+		origins.Vids = append(origins.Vids, v.ID)
+		origins.Origins = append(origins.Origins, v.Origin)
+	}
+	var repl int = 0
+	//log.Printf("calling Display.SetVisualsOrigin %v\n", origins)
+	err := client.Call("Display.SetVisualsOrigin", origins, &repl)
+	if err != nil {
+		*reply = -1
+		//log.Println("Display error setting Visuals orgin: ", err)
+		return err
+	}
+	if repl == 0 {
+		reply = &repl
+	} else {
+		log.Println("Something happened during Display.SetVisualsOrigin ", repl)
+		*reply = -1
+	}
 	return nil
 }
 
