@@ -190,18 +190,20 @@ func (c *Core) Group(layer string, reply *int) error {
 	}
 	//map af array of visuals, the key is the metadata/layer
 	groups := make(map[string][]*mrclean.Visual, len(c.Visuals))
+	//map of the maximum size of each group
+	rowsize := make(map[string]float64, len(c.Visuals))
 	for _, v := range c.Visuals {
 		groups[v.Meta[0]] = append(groups[v.Meta[0]], v)
+		rowsize[v.Meta[0]] = math.Max(v.Size[0], rowsize[v.Meta[0]])
 	}
 	dx := c.mx + 0.05 //5 cm
-	dy := c.my + 0.05 //5 cm
-	var (
-		//row     float64                = 1.0
-		lastpx                         = -c.DispW*0.5 + dx*0.5
-		lastpy                         = c.DispH*0.5 - dy*0.5
-		origins *mrclean.VisualOrigins = mrclean.NewVisualOrigins()
-	)
-	for _, row := range groups {
+	dy := 0.0         //c.my + 0.05 //5 cm
+	var origins *mrclean.VisualOrigins = mrclean.NewVisualOrigins()
+	for k, row := range groups {
+		lastpx := -c.DispW*0.5 + dx*0.5
+		lastpy := c.DispH*0.5 - dy - rowsize[k]*0.5 + 0.05
+		//keep track of the height
+		dy += rowsize[k]
 		//put row by row on screen here
 		for _, v := range row {
 			v.Origin[0], v.Origin[1] = lastpx, lastpy
@@ -210,9 +212,9 @@ func (c *Core) Group(layer string, reply *int) error {
 			lastpx += dx
 		}
 		// back to the left
-		lastpx = -c.DispW*0.5 + dx*0.5
+		//lastpx = -c.DispW*0.5 + dx*0.5
 		// next row
-		lastpy -= dy
+		//lastpy -= dy
 	}
 	//CALL
 	var repl int = 0

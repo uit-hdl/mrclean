@@ -15,10 +15,10 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
-
-	glm "github.com/folago/googlmath"
+	"time"
 
 	"github.com/UniversityofTromso/mrclean"
+	glm "github.com/folago/googlmath"
 	"github.com/folago/leap"
 )
 
@@ -122,10 +122,21 @@ func LeapSend() {
 	}
 	ldev.GestEnable(true)
 	go GestureSender(out, ldev)
+	var oldG time.Time
+	newG := time.Now()
 	for gl := range out {
 		//fmt.Printf("id: %d, type: %s frames: %d ", gl[0].ID, gl[0].Type, len(gl))
 		//dur := gl[0].Duration
 		for _, g := range gl {
+			//throttle a bit
+			delta := newG.Sub(oldG)
+			if delta.Seconds() < 1.5 {
+				log.Printf("continue delta %v\n", delta)
+				oldG = newG
+				continue
+			}
+			oldG = newG
+			log.Printf("oldG %v delta %v\n", oldG, delta)
 			switch g.Type {
 			case "circle":
 				x := g.Normal.Dot(glm.Vector3{0, 0, -1})
@@ -166,6 +177,8 @@ func LeapSend() {
 				if ret == -1 {
 					log.Printf("something wrong in the sorting")
 				}
+				//on one event
+				continue
 			case "screenTap":
 				log.Printf("id: %d, type: %s\n", g.ID, g.Type)
 			case "keyTap":
@@ -295,3 +308,12 @@ func Map(ch chan leap.Gesture) chan leap.Gesture {
 //		}
 //	}
 ////}
+
+//ok new stuff, the idea is to have a slice of channels to send the frame to
+//attached ot each channels thereis is  goroutine doing something and sending
+//events on another channel, in this way we can register event handler adding
+//a go routine and channels
+//a better way would be a linq stuff like the functional reacting but now i have no time to
+//properly look into it.
+
+func hookEvents() {}
