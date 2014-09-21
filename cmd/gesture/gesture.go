@@ -30,7 +30,7 @@ var (
 	//config file name
 	configfile string
 	//config is map of configuration options
-	config map[string]string
+	config map[string]interface{}
 	//netconn is the transport protocol for the connection
 	netconn string
 
@@ -73,7 +73,7 @@ func main() {
 	<-sigc
 }
 
-func ReadConfig(fname string) (map[string]string, error) {
+func ReadConfig(fname string) (map[string]interface{}, error) {
 	file, err := os.Open(fname)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func ReadConfig(fname string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var config map[string]string
+	var config map[string]interface{}
 	err = json.Unmarshal(buff, &config)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,10 @@ func LeapSend() {
 		case "circle":
 			x := g.Normal.Dot(glm.Vector3{0, 0, -1})
 			var clockwise bool
-			layers := strings.Split(config["layers"], "/")
+
+			lstring := config["layers"].(string)
+			//layers := strings.Split(config["layers"], "/")
+			layers := strings.Split(lstring, "/")
 			if x >= 0 {
 				clockwise = true
 				shift(layers, clockwise)
@@ -173,7 +176,9 @@ func LeapSend() {
 			}
 
 			log.Printf("id: %d, type: %s speed: %f \n", g.ID, g.Type, g.Speed)
-			layers := strings.Split(config["layers"], "/")
+			lstring := config["layers"].(string)
+			//layers := strings.Split(config["layers"], "/")
+			layers := strings.Split(lstring, "/")
 			//shuffle(layers)
 			shift(layers, right)
 			group := strings.Join(layers, "/")
@@ -354,3 +359,17 @@ type TimeGesture struct {
 //properly look into it.
 
 func hookEvents() {}
+
+//this is worth a C.R.A.P.L.
+func matchCircleGesture(clockwise bool, rounds int, gestures []interface{}) (order, layout string) {
+	for _, v := range gestures {
+		vv := v.(map[string]interface{})
+		gclk := vv["clockwise"].(bool)
+		gr := vv["rounds"].(int)
+		if gclk != clockwise && gr == rounds {
+			return vv["layout"].(string), vv["order"].(string)
+		}
+
+	}
+	return
+}

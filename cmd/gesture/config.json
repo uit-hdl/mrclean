@@ -1,3 +1,16 @@
 {
-	"layers":"iteration/plate/uid/method/task/plot_type/filename"
+    "layers": "iteration/plate/uid/method/task/plot_type/filename",
+    "cicle": [
+        {
+            "clockwise": true,
+            "rounds": 2,
+            "layout": "Group",
+            "order": "iteration/plate/uid/method/task/plot_type/filename"
+        },{
+            "clockwise": true,
+            "rounds": 3,
+            "layout": "Group",
+            "order": "method/iteration/plate/uid/task/plot_type/filename"
+        }
+    ]
 }
