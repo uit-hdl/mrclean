@@ -77,8 +77,8 @@ func init() {
 	flag.StringVar(&rpcserver,
 		"rpcserver", mrclean.ChronicleAddr,
 		"IP:PORT of the rpc server, defaults to localhost:32124")
-	flag.StringVar(&watch, "watch", "./watch",
-		"Specifies the path to watch, default to ./watch")
+	flag.StringVar(&watch, "watch", "watch",
+		"Specifies the path to watch, default to watch")
 	flag.StringVar(&configfile,
 		"configfile", "config.json", "Configuration file for Mr. Clean")
 
@@ -239,18 +239,20 @@ func WatchWalk(path string, info os.FileInfo, err error) error {
 //the filepath.WalkFunc to walk the watched folders
 //in addition it sends visuals to the core if it finds some in the dirs
 func WatchWalkImgs(path string, info os.FileInfo, err error) error {
-	log.Println(path) //, info.IsDir())
+	//log.Println(path) //, info.IsDir())
 	if err != nil {
 		return err
 	}
 	switch {
 	case info.IsDir():
+		log.Println("is dir ", path)
 		//err = watcher.WatchFlags(path, fsnotify.FSN_MODIFY|fsnotify.FSN_CREATE)
 		err = watcher.Add(path)
 		if err != nil {
 			return err
 		}
 	case reImg.MatchString(path):
+		log.Println("found match ", path)
 		relpath, err := filepath.Rel(watch, path)
 		if err != nil {
 			log.Fatal("Path to 'watch' mismatched: ", err)
@@ -259,7 +261,11 @@ func WatchWalkImgs(path string, info os.FileInfo, err error) error {
 		//as the config, if it has we put its name in a buffer and later feed it
 		//to the fs event handler
 		if layers == len(strings.Split(relpath, string(os.PathSeparator))) {
+			log.Printf("adding to backlog %s\n", path)
 			imgbacklog = append(imgbacklog, path)
+		} else {
+
+			log.Printf("layers mismatch layers = %d should be %d", len(strings.Split(relpath, string(os.PathSeparator))), layers)
 		}
 	}
 	return nil

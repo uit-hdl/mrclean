@@ -146,29 +146,45 @@ func LeapSend() {
 		case "circle":
 			x := g.Normal.Dot(glm.Vector3{0, 0, -1})
 			var clockwise bool
-
-			lstring := config["layers"].(string)
-			//layers := strings.Split(config["layers"], "/")
-			layers := strings.Split(lstring, "/")
-			if x >= 0 {
-				clockwise = true
-				shift(layers, clockwise)
-
-			} else {
-				shift(layers, clockwise)
-			}
-			sort := strings.Join(layers, "/")
-			fmt.Println("SEND: Sort", sort)
-			var ret int
-			err := client.Call("Core.Sort", sort, &ret)
-			if err != nil {
-				log.Println(err)
-			}
-			if ret == -1 {
-				log.Printf("something wrong in the sorting")
-			}
-			config["layers"] = sort
 			log.Printf("id: %d, type: %s progress: %f clockwise: %v \n", g.ID, g.Type, g.Progress, clockwise)
+			//fing the config gesture
+			layout, arg := matchCircleGesture(clockwise, int(g.Progress), config["circles"].([]interface{}))
+			//default
+			if layout == "" || arg == "" {
+				lstring := config["layers"].(string)
+				//layers := strings.Split(config["layers"], "/")
+				layers := strings.Split(lstring, "/")
+				if x >= 0 {
+					clockwise = true
+					shift(layers, clockwise)
+
+				} else {
+					shift(layers, clockwise)
+				}
+				sort := strings.Join(layers, "/")
+				fmt.Println("SEND: Sort", sort)
+				var ret int
+				err := client.Call("Core.Sort", sort, &ret)
+				if err != nil {
+					log.Println(err)
+				}
+				if ret == -1 {
+					log.Printf("something wrong in the sorting")
+				}
+				config["layers"] = sort
+			} else {
+				fmt.Println("SEND: ", layout, arg)
+				var ret int
+				callfn := fmt.Sprintf("Core.%s", layout)
+				err := client.Call(callfn, arg, &ret)
+				if err != nil {
+					log.Println(err)
+				}
+				if ret == -1 {
+					log.Printf("something wrong in the sorting")
+				}
+				config["layers"] = arg
+			}
 		case "swipe":
 			right := false
 			if g.Direction.X > 0 {
@@ -365,7 +381,7 @@ func matchCircleGesture(clockwise bool, rounds int, gestures []interface{}) (ord
 	for _, v := range gestures {
 		vv := v.(map[string]interface{})
 		gclk := vv["clockwise"].(bool)
-		gr := vv["rounds"].(int)
+		gr := int(vv["rounds"].(float64))
 		if gclk != clockwise && gr == rounds {
 			return vv["layout"].(string), vv["order"].(string)
 		}

@@ -208,7 +208,7 @@ func (c *Core) Group(layer string, reply *int) error {
 		lastpx := -c.DispW*0.5 + dx*0.5
 		lastpy := c.DispH*0.5 - dy - rowsize[k]*0.5 + 0.05
 		//keep track of the height
-		dy += rowsize[k]
+		dy += rowsize[k] + 0.05
 		//put row by row on screen here
 		for _, v := range row {
 			v.Origin[0], v.Origin[1] = lastpx, lastpy
