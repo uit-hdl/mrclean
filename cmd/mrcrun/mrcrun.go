@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -8,11 +10,19 @@ import (
 	"time"
 )
 
+var displaycloudurl string
+
+func init() {
+	flag.StringVar(&displaycloudurl,
+		"displaycloudurl", "ws://10.1.1.5:8088/ws_rpc_events",
+		"URL of the websocket for displaycloud, default ws://10.1.1.5:8088/ws_rpc_events")
+}
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	//display
-	display := exec.Command("display")
+	url := fmt.Sprintf("displaycloudurl=%q", displaycloudurl)
+	display := exec.Command("display", url)
 	//get stdout
 	stdoutd, err := display.StdoutPipe()
 	if err != nil {
