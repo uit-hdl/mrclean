@@ -3,7 +3,6 @@ package mrclean
 import (
 	"encoding/json"
 	"fmt"
-	"gui/we"
 	"image"
 	"io/ioutil"
 	"log"
@@ -57,18 +56,18 @@ type InMessage struct {
 	Content json.RawMessage
 }
 
-type InputMessage struct {
-	Drag       *we.MouseDrag
-	Press      *we.MousePress
-	Release    *we.MouseRelease
-	Move       *we.MouseMove
-	PadPress   *we.PadPress
-	PadRelease *we.PadRelease
-	PadMove    *we.PadMove
-	PadDrag    *we.PadDrag
-	AxisMove   *we.AxisMove
-	HandMove   *we.HandMove
-}
+//type InputMessage struct {
+//	Drag       *we.MouseDrag
+//	Press      *we.MousePress
+//	Release    *we.MouseRelease
+//	Move       *we.MouseMove
+//	PadPress   *we.PadPress
+//	PadRelease *we.PadRelease
+//	PadMove    *we.PadMove
+//	PadDrag    *we.PadDrag
+//	AxisMove   *we.AxisMove
+//	HandMove   *we.HandMove
+//}
 
 type CmdMessage struct {
 	NewImage *ImageData //*string
