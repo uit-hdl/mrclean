@@ -148,7 +148,12 @@ func LeapSend() {
 			var clockwise bool
 			log.Printf("id: %d, type: %s progress: %f clockwise: %v \n", g.ID, g.Type, g.Progress, clockwise)
 			//fing the config gesture
-			layout, arg := matchCircleGesture(clockwise, int(g.Progress), config["circles"].([]interface{}))
+			l, ok := config["circles"]
+			var layout, arg string
+			if ok {
+				layout, arg = matchCircleGesture(clockwise, int(g.Progress), l.([]interface{}))
+			}
+
 			//default
 			if layout == "" || arg == "" {
 				lstring := config["layers"].(string)
