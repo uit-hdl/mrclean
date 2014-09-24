@@ -14,7 +14,7 @@ import (
 type By func(p1, p2 *mrclean.Visual) bool
 
 // Sort is a method on the function type, By, that sorts the argument slice according to the function.
-func (by By) Sort(visuals []mrclean.Visual) {
+func (by By) Sort(visuals []*mrclean.Visual) {
 	ps := &visualSorter{
 		visuals: visuals,
 		by:      by, // The Sort method's receiver is the function (closure) that defines the sort order.
@@ -24,7 +24,7 @@ func (by By) Sort(visuals []mrclean.Visual) {
 
 // visualSorter joins a By function and a slice of Visuals to be sorted.
 type visualSorter struct {
-	visuals []mrclean.Visual
+	visuals []*mrclean.Visual
 	by      func(p1, p2 *mrclean.Visual) bool // Closure used in the Less method.
 }
 
@@ -40,7 +40,7 @@ func (s *visualSorter) Swap(i, j int) {
 
 // Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
 func (s *visualSorter) Less(i, j int) bool {
-	return s.by(&s.visuals[i], &s.visuals[j])
+	return s.by(s.visuals[i], s.visuals[j])
 }
 
 //var visuals = []mrclean.Visual{
