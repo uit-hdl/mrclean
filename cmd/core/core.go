@@ -126,9 +126,9 @@ func (c *Core) Sort(layersorder string, reply *int) error {
 	}
 	//need to copy the map in a slice to sort it
 	//maybe this should change
-	visuals := make([]mrclean.Visual, 0, len(c.Visuals))
+	visuals := make([]*mrclean.Visual, 0, len(c.Visuals))
 	for _, v := range c.Visuals {
-		visuals = append(visuals, *v)
+		visuals = append(visuals, v)
 	}
 	log.Printf("sorting: len(visuals) = %v\n", len(visuals))
 	//SORT
@@ -209,6 +209,10 @@ func (c *Core) Group(layer string, reply *int) error {
 		lastpy := c.DispH*0.5 - dy - rowsize[k]*0.5 + 0.05
 		//keep track of the height
 		dy += rowsize[k] + 0.05
+		//sort the row the first part of teh metadaa is the same
+		//for all the element s in the row, the user should define the
+		//order of the rest of the metadata variables
+		By(metaf).Sort(row)
 		//put row by row on screen here
 		for _, v := range row {
 			v.Origin[0], v.Origin[1] = lastpx, lastpy
