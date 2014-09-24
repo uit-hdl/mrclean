@@ -249,6 +249,19 @@ func DisplayGroupInfo() RpcReq {
 	return call
 }
 
+///json_rpc_call('displays_get_info', [])
+func DisplaysInfo() RpcReq {
+	call := RpcReq{
+		Version: "2.0",
+		ID:      <-id,
+		Method:  "displays_get_info",
+		//we need to pass a slice or the json encoding will
+		// be null and it pisses off torado
+		Params: []int{}}
+	log.Println("call: ", call)
+	return call
+}
+
 ///json_rpc_call('move_selected_visuals', [[42, 39], [], [29]])
 /* """moves the visuals onto either one display or one displaygroup.
    @param visual_ids list of visual ids (length > 0)
@@ -383,7 +396,7 @@ func (cli *Client) handleConn() {
 
 func (cli *Client) displayInfo() error {
 	log.Println("getting the display wall info")
-	dwinfo := DisplayGroupInfo()
+	dwinfo := DisplaysInfo()
 	buff, err := json.Marshal(dwinfo)
 	if err != nil {
 		//log.Fatal("Error marshaling display wall info req: ", err)
