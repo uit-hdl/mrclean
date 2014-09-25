@@ -206,7 +206,7 @@ func (c *Core) Group(layer string, reply *int) error {
 	var origins *mrclean.VisualOrigins = mrclean.NewVisualOrigins()
 	for k, row := range groups {
 		lastpx := -c.DispW*0.5 + dx*0.5
-		lastpy := c.DispH*0.5 - dy - rowsize[k]*0.5 + 0.05
+		lastpy := c.DispH*0.5 - dy - rowsize[k]*0.5 - 0.05
 		//keep track of the height
 		dy += rowsize[k] + 0.05
 		//sort the row the first part of teh metadaa is the same
