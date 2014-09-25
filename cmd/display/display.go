@@ -23,7 +23,7 @@ var (
 func init() {
 	flag.StringVar(&displaycloudurl,
 		"displaycloudurl", "ws://127.0.0.1:8088/ws_rpc_events",
-		"URL of the websocket for displaycloud, default ws://10.1.1.5:8088/ws_rpc_events")
+		"URL of the websocket for displaycloud, default ws://127.0.0.1:8088/ws_rpc_events")
 	flag.StringVar(&rpcserver,
 		"rpcserver", mrclean.DisplayAddr,
 		"IP:PORT of the rpc server, defaults to localhost:32123")
