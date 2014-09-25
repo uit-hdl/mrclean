@@ -396,7 +396,7 @@ func (cli *Client) handleConn() {
 
 func (cli *Client) displayInfo() error {
 	log.Println("getting the display wall info")
-	dwinfo := DisplaysInfo()
+	dwinfo := DisplayGroupInfo()
 	buff, err := json.Marshal(dwinfo)
 	if err != nil {
 		//log.Fatal("Error marshaling display wall info req: ", err)
