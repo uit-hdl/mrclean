@@ -227,7 +227,7 @@ type Visual struct {
 	Size []float64 //`json:"omitempty"`
 }
 
-func ReadConfig(fname string) (map[string]string, error) {
+func ReadConfig(fname string) (map[string]interface{}, error) {
 	file, err := os.Open(fname)
 	if err != nil {
 		return nil, err
@@ -236,7 +236,7 @@ func ReadConfig(fname string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var config map[string]string
+	var config map[string]interface{}
 	err = json.Unmarshal(buff, &config)
 	if err != nil {
 		return nil, err

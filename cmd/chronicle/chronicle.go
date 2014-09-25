@@ -54,7 +54,7 @@ var (
 	//netconn is the transport protocol for the connection
 	netconn string
 	//config is map of configuration options
-	config     map[string]string
+	config     map[string]interface{}
 	configfile string
 	layers     int
 
@@ -113,7 +113,7 @@ func main() {
 		log.Fatal(err)
 	}
 	//numebr of layers of the configuration
-	layers = len(strings.Split(config["layers"], string(os.PathSeparator)))
+	layers = len(strings.Split(config["layers"].(string), string(os.PathSeparator)))
 	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)

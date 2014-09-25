@@ -29,7 +29,7 @@ var (
 	//config file name
 	configfile string
 	//config is map of configuration options
-	config map[string]string
+	config map[string]interface{}
 	//netconn is the transport protocol for the connection
 	netconn string
 )
@@ -202,7 +202,7 @@ func (c *Core) Group(layer string, reply *int) error {
 		rowsize[v.Meta[0]] = math.Max(v.Size[0], rowsize[v.Meta[0]])
 	}
 	dx := c.mx + 0.05 //5 cm
-	dy := 0.5         //c.my + 0.05 //5 cm
+	dy := 0.05        //c.my + 0.05 //5 cm
 	var origins *mrclean.VisualOrigins = mrclean.NewVisualOrigins()
 	for k, row := range groups {
 		lastpx := -c.DispW*0.5 + dx*0.5
@@ -281,7 +281,7 @@ func (c *Core) updatemetadata(layersorder string) error {
 	//TODO add check in case we are already up to date
 
 	//get the the metadata
-	layersconf := config["layers"]
+	layersconf := config["layers"].(string)
 	//split metdata in to layers
 	layers := strings.Split(layersconf, string(os.PathSeparator))
 	//split requested layer order
@@ -372,7 +372,7 @@ func srunService(core *Core) {
 	}
 }
 
-func ReadConfig(fname string) (map[string]string, error) {
+func ReadConfig(fname string) (map[string]interface{}, error) {
 	file, err := os.Open(fname)
 	if err != nil {
 		return nil, err
@@ -381,7 +381,7 @@ func ReadConfig(fname string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var config map[string]string
+	var config map[string]interface{}
 	err = json.Unmarshal(buff, &config)
 	if err != nil {
 		return nil, err
