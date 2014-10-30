@@ -11,3 +11,6 @@ We have realized this approach in a tool called Mr. Clean.
 This tool provides a framework for combining different visualization tools, interaction devices, and display middleware for visual comparisons on highresolution displays. 
 Mr. Clean also provides user-configurable interactions supported by many devices. 
 We provide use cases and a requirement analysis for our approach, and we describe the design and implementation of Mr. Clean.
+
+[Mr. Clean docs here](http://godoc.org/github.com/UniversityofTromso/mrclean)
+
