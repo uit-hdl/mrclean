@@ -325,7 +325,7 @@ func Map(ch chan leap.Gesture) chan leap.Gesture {
 	return ch
 }
 
-////init glfe and gamepad, loop foreverrrrrrrr
+////init glfw and gamepad, loop foreverrrrrrrr
 //func Pad() {
 //err = glfw.Init()
 //	if err != nil {
@@ -373,7 +373,7 @@ type TimeGesture struct {
 }
 
 //ok new stuff, the idea is to have a slice of channels to send the frame to
-//attached ot each channels thereis is  goroutine doing something and sending
+//attached ot each channels thereis  goroutine doing something and sending
 //events on another channel, in this way we can register event handler adding
 //a go routine and channels
 //a better way would be a linq stuff like the functional reacting but now i have no time to
@@ -393,4 +393,43 @@ func matchCircleGesture(clockwise bool, rounds int, gestures []interface{}) (ord
 
 	}
 	return
+}
+
+func ZoomGesture(ld chan *leap.Frame, out chan leap.Gesture) {
+	var (
+		zoomin             bool
+		newScale, oldScale float32 = 1, 1
+	)
+	for frame := range ld {
+		//fmt.Printf("%+v\n", frame.Timestamp)
+
+		//if len(frame.Gestures) == 0 {
+		//	//fmt.Printf("No gestures\n")
+		//	continue
+		//}
+		//var gslice []leap.Gesture
+		//get a gest by id
+		//fmt.Printf("%+v\n", g)
+		//tg := TimeGesture{
+		//	Gesture: g,
+		//	Time:    time.Now(),
+		//}
+		if len(frame.Hands) == 2 {
+			newScale = frame.S
+			if newScale > oldScale {
+				zoomin = true
+			}
+			zoomin = false
+
+			g := leap.Gesture{}
+
+			out <- g //	gslice = append(gslice, g)
+
+		}
+		//fmt.Printf("%+v\n", g)
+		//if len(gslice) > 0 {
+		//	ch <- gslice
+		//}
+	}
+
 }
