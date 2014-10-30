@@ -1,3 +1,13 @@
+/*
+displaycloud provides basic functionality to interact with the DisplayCloud "middleware".
+
+The displaycloud package is used by mrclean to interact with the DislpayCloud middleware.
+It provides the basic functionalities to marshal and unmarshal the JSONRPC messages to be sent via websocket.
+It connects to DisplayCloud and do handle all the calls to adding, soerting and grouping new visuals.
+There is a stub for the handling of events coming from other sources, e.g. if someone move a visual from another client
+we got a event but we ignore it so far.
+
+*/
 package displaycloud
 
 import (

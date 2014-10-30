@@ -12,5 +12,8 @@ startup.
 On a new image the chronicle component sends a RPC call to the core component containing the name of the new image, the size and
 the URL. DisplayCloud uses the URL to fetch the image and display it. To this end chronicle also runs an HTTP server, serving the images in the watch directory tree.
 
+chronicles supports png and jpeg image files so far.
+
+
 */
 package main

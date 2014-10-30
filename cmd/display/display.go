@@ -1,3 +1,9 @@
+/*
+The display component is a proxy for the technology used to display the images, at this point only DisplayCloud is supported.
+
+The display component is a proxy for the DisplayCloud "middleware", it connects to it and handles all the calls from the core component.
+Most of the work is done in the mrclean/displaycloud package. In the future, with a stable API, a mechanism to register different back end could be added. Something similar to the image and sql in the go std library.
+*/
 package main
 
 import (

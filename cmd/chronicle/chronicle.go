@@ -433,6 +433,7 @@ func localIP() (net.IP, error) {
 	return nil, fmt.Errorf("cannot find local IP address")
 }
 
+//get file info
 func finfo(fname string) (os.FileInfo, error) {
 	info, err := os.Stat(fname)
 	if err != nil {
@@ -454,7 +455,6 @@ func fsize(fname string) int64 {
 
 //Intializes the session with all the parameters received from the command line.
 //In particular it creates the missing paths and assign adefault sessino name.
-
 func initSession() error {
 	if session == "" {
 		session = fmt.Sprintf("Mr.Clean session: %s", time.Now().Format(time.RFC3339))
@@ -484,6 +484,7 @@ func initSession() error {
 	return nil
 }
 
+//imagesize gets the size of an image
 func imgsize(path string) (int, int, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -498,6 +499,7 @@ func imgsize(path string) (int, int, error) {
 	return cfg.Width, cfg.Height, nil
 }
 
+//commits to git repo
 func gitCommit(name string) (string, error) {
 	// git stuff
 	cmd := exec.Command("git", "add", name)

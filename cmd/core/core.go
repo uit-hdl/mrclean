@@ -1,3 +1,14 @@
+/*
+The core component is the central node managing the other components.
+
+The core component connects to the chronicle and receives the details of the new images via RPC.
+The core also connects to the display component and sends the new visuals again via RPC.
+The rpc address and port for all the components can be configured at startup via command line arguments.
+
+The core also expose a RPC interface to sort and group the visuals and sent the updated list to the display.
+This is called by the gesture component.
+
+*/
 package main
 
 import (
